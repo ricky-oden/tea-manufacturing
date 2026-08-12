@@ -20,8 +20,8 @@ PLAN_VERSION: `TEA-V1.0`
 | `/inventory/products` | 製品在庫 | 残高、ページング | TEA-FR-006 |
 | `/inventory/transactions` | 在庫増減履歴 | 対象・種別・期間検索 | TEA-FR-006 |
 | `/shipments` | 出荷一覧 | 検索、ページング、詳細遷移 | TEA-FR-007 |
-| `/shipments/new` | 出荷登録 | 出荷入力、確定 | TEA-FR-007 |
-| `/shipments/:shipmentId` | 出荷詳細 | 出荷内容、確定状態、在庫履歴 | TEA-FR-007 |
+| `/shipments/new` | 出荷登録 | 複数明細の下書き登録 | TEA-FR-007 |
+| `/shipments/:shipmentId` | 出荷詳細 | 下書き編集・確定、確定後読み取り専用 | TEA-FR-007 |
 | `/reports` | 集計 | 期間指定、入荷・製造・出荷集計 | TEA-FR-008 |
 | `/masters/tea-leaves` | 茶葉マスタ | 一覧、登録、編集、有効・無効 | TEA-FR-009 |
 | `/masters/varieties` | 品種マスタ | 一覧、登録、編集、有効・無効 | TEA-FR-009 |
@@ -38,6 +38,8 @@ PLAN_VERSION: `TEA-V1.0`
 - frontendのdisabledは補助制御とし、backendでも必ず再検証する。
 - API validation errorは入力欄付近、業務競合・通信失敗は共通alert領域に表示する。
 - 一覧は`page`、`page_size`をURL queryと同期する。
+- 在庫履歴の検索条件と集計期間もURL queryへ同期する。
+- 在庫・出荷数量は`kg`を明示し、状態は色だけに依存せず文字で表示する。
 
 ## 状態別UI
 

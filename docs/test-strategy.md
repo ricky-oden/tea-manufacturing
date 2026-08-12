@@ -168,3 +168,15 @@ Phase 1の基盤test、Docker Compose、手動CI定義を実装した。Starlett
 - 全工程完了後の製造完了と、工程0件のPhase 2既存注文に対する経過措置
 - 設備一覧・登録・編集・有効無効、無効設備の新規利用拒否、過去参照維持
 - frontendの入荷複数明細、validation、送信中、入力保持、工程状態操作、設備管理とcache再取得
+
+## Phase 4 test
+
+- 原料・製品残高のページング、在庫履歴の種別・マスタ・期間検索と、残高更新APIが存在しないこと
+- 出荷下書きの登録・一覧・詳細・編集、複数明細、番号・製品重複、数量、無効製品、DB制約
+- 確定時の複数製品残高減算、明細単位`SHIPMENT`履歴、確定後編集・二重確定拒否
+- 在庫不足とflush後強制例外による、出荷状態・全残高・全履歴のrollbackと統一エラー
+- 独立session／connectionの同時確定で1成功・1拒否となり、在庫と履歴が1回分だけ更新されること
+- `Asia/Tokyo`の期間境界、マスタ別内訳、未確定出荷除外、ダッシュボード値と元データの一致
+- frontend各一覧のloading/error/empty、ページングとURL同期、履歴条件、複数明細登録、validation、送信中、入力保持、確定中、確定後読み取り専用、期間変更、ダッシュボード値、mutation後cache更新
+
+Phase 4の検証根拠は`backend/tests/test_phase4.py`と`frontend/src/Phase4.test.tsx`とする。これらのPostgreSQL/Jest実行、migration、lint、format、buildのいずれかが未実行または失敗中の場合、`TEA-FR-001/006/007/008`および`TEA-NFR-003`を検証済みと記録しない。

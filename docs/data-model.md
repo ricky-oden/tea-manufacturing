@@ -115,8 +115,9 @@ PLAN_VERSION: `TEA-V1.0`
 
 - shipment_number: 一意な出荷番号
 - shipped_date
-- status: 確定前状態を採用する場合は`DRAFT` / `CONFIRMED`
+- status: `DRAFT` / `CONFIRMED`
 - confirmed_at
+- created_at / updated_at
 
 ### `ShipmentLine`
 
@@ -124,7 +125,7 @@ PLAN_VERSION: `TEA-V1.0`
 - product_id
 - quantity
 
-出荷確定前状態を設けるかは未確定である。いずれの方式でも、同じ出荷を複数回在庫反映できないDB状態とservice検証を持つ。
+出荷は1件以上の明細を持ち、同一出荷内の同じ製品をunique制約で拒否する。数量は`NUMERIC(15, 3)`の正数とする。出荷番号は一意で、確定済み出荷はserviceで編集・再確定を拒否する。無効製品は新規明細へ利用できないが、既存明細の外部キー参照は保持する。
 
 ## CSV取込
 
@@ -185,3 +186,7 @@ CsvImportJob 1 --- * CsvImportError
 ## Phase 3 migration範囲
 
 Phase 2 revisionへ連続する1 revisionで、仕入先、原料入荷ヘッダー・明細、固定製造工程を追加し、在庫取引種別へ`RECEIPT`を追加する。入荷数量の正数check、入荷番号unique、工程sequence/process codeの製造指示内unique、外部キーをDB制約として持つ。
+
+## Phase 4 migration範囲
+
+Phase 3 revisionへ連続する1 revisionで、出荷ヘッダー・明細を追加し、在庫取引種別へ`SHIPMENT`を追加する。出荷番号unique、同一出荷内製品unique、数量正数check、製品外部キーをDB制約として持つ。集計とダッシュボードは既存業務tableから算出し、集計専用tableは追加しない。

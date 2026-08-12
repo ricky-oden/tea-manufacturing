@@ -6,29 +6,29 @@ PLAN_VERSION: `TEA-V1.0`
 
 ## 現在フェーズ
 
-Phase 0: 計画固定（完了）／Phase 1: 開発基盤（完了）／Phase 2: 最初の縦切り（完了）／Phase 3: 入荷・工程・設備（実装・検証完了、commit承認待ち）
+Phase 0: 計画固定（完了）／Phase 1: 開発基盤（完了）／Phase 2: 最初の縦切り（完了）／Phase 3: 入荷・工程・設備（完了）／Phase 4: 在庫・出荷・集計（実装・検証完了、commit承認待ち）
 
-TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1の開発基盤、Phase 2の最初の縦切り、Phase 3の原料入荷・固定工程・設備管理を実装・検証した。後続フェーズの在庫参照、出荷、集計、CSV等は未実装である。
+TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1からPhase 3は確定済みであり、Phase 4の在庫参照、出荷、期間集計、ダッシュボードを実装・検証した。CSV取込とPhase 6総合整備は未実装である。
 
 ## 要件状況
 
 | 要件ID | 要件 | 計画済み | 実装済み | 検証済み |
 |---|---|---|---|---|
-| TEA-FR-001 | ダッシュボード | はい | いいえ | いいえ |
+| TEA-FR-001 | ダッシュボード | はい | はい | はい |
 | TEA-FR-002 | 原料入荷 | はい | はい | はい |
 | TEA-FR-003 | 製造指示 | はい | いいえ | いいえ |
 | TEA-FR-004 | 工程管理 | はい | はい | はい |
 | TEA-FR-005 | 設備管理 | はい | はい | はい |
-| TEA-FR-006 | 在庫管理 | はい | いいえ | いいえ |
-| TEA-FR-007 | 出荷 | はい | いいえ | いいえ |
-| TEA-FR-008 | 集計 | はい | いいえ | いいえ |
+| TEA-FR-006 | 在庫管理 | はい | はい | はい |
+| TEA-FR-007 | 出荷 | はい | はい | はい |
+| TEA-FR-008 | 集計 | はい | はい | はい |
 | TEA-FR-009 | マスタ管理 | はい | いいえ | いいえ |
 | TEA-FR-010 | 製造状態と操作制御 | はい | はい | はい |
 | TEA-FR-011 | 製品マスタCSV取込 | はい | いいえ | いいえ |
 | TEA-FR-012 | 製造指示から在庫更新までの結合処理 | はい | はい | はい |
 | TEA-NFR-001 | API契約と統一エラー | はい | はい | はい |
 | TEA-NFR-002 | ページング | はい | いいえ | いいえ |
-| TEA-NFR-003 | 在庫取引の整合性と重複拒否 | はい | いいえ | いいえ |
+| TEA-NFR-003 | 在庫取引の整合性と重複拒否 | はい | はい | はい |
 | TEA-NFR-004 | 再現可能な開発環境 | はい | はい | はい |
 | TEA-NFR-005 | 自動テスト | はい | いいえ | いいえ |
 | TEA-NFR-006 | 手動起動限定CI | はい | はい | いいえ |
@@ -68,7 +68,7 @@ TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1の開発基�
 
 ## 次の承認ゲート
 
-Phase 3の検証結果をユーザーが確認し、commitを承認すること。
+Phase 4の検証結果をユーザーが確認し、commitを承認すること。
 
 ## Phase 2範囲の状態
 
@@ -96,3 +96,16 @@ Phase 3の検証結果をユーザーが確認し、commitを承認すること�
 - Phase 3検証: Jest 25件、pytest 38件、frontend/backend lint・format、Vite build、Compose config/build/up、開発/test DB migration・Alembic check、backend/Vite proxy APIが成功
 - 接続DB: 開発`db:5432/tea_manufacturing`（named volume保持）、test`test-db:5432/tea_manufacturing_test`（tmpfs、clean migration検証）
 - `TEA-FR-002/004/005`は受入条件を実装・検証済み。`TEA-FR-009`は茶葉・品種・仕入先・製品の編集等が後続のため要件全体は未完了とする。
+
+## Phase 4範囲の状態
+
+- Model/migration: `DRAFT`・`CONFIRMED`を持つ出荷ヘッダー、複数製品明細、`SHIPMENT`取引種別をPhase 3に連続するrevisionで追加
+- 在庫参照: 原料・製品残高のページング一覧と、在庫種別・取引種別・各マスタ・期間による履歴検索を実装。残高の汎用更新APIは設けない
+- 出荷: 下書き登録・一覧・詳細・編集、複数明細の確定、製品残高減算、明細単位履歴を同一transactionで実装。確定後は読み取り専用
+- transaction: 出荷行とproduct ID順の製品残高行をlock後に再検証し、在庫不足・途中例外では全rollback、同時確定では1件だけ成功することをPostgreSQLで確認
+- 集計: `Asia/Tokyo`で両端を含む必須期間を検証し、入荷・製造完了・確定出荷、現在庫、マスタ別内訳を集計。未確定出荷を除外
+- dashboard: 製造状態別件数、原料・製品在庫概況、指定期間の3数量を表示し、frontend初期期間を当日を含む直近30日とする
+- frontend: 在庫3画面、出荷3画面、集計画面、ダッシュボードを追加し、loading/error/empty、URL query、pagination、validation、disabled、入力保持、読み取り専用、cache更新を実装
+- Phase 4検証: Jest 43件、pytest 46件、frontend/backend lint・format、Vite build、開発/test DB migration・Alembic check、ComposeとAPI疎通を実施
+- 接続DB: 開発`db:5432/tea_manufacturing`（named volume保持）、test`test-db:5432/tea_manufacturing_test`（tmpfs、clean migration検証）
+- `TEA-FR-001/006/007/008`と`TEA-NFR-003`は受入条件を実装・検証済み。`TEA-NFR-002/005`は後続のマスタ・CSV等を含む全体完了まで未完了とする。

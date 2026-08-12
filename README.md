@@ -4,7 +4,7 @@ PLAN_VERSION: `TEA-V1.0`
 
 製茶会社における原料入荷、製造指示、工程、設備、在庫、出荷、集計、マスタ、CSV取込を題材に、業務システムの処理を学ぶための単一事業所向けアプリケーションです。
 
-Phase 1の開発基盤、Phase 2の製造指示から在庫更新までの縦切り、Phase 3の原料入荷・固定工程・設備管理を実装・検証済みです。数量単位は`kg`、DBは`NUMERIC(15, 3)`、backendは`Decimal`を使用します。Phase 3の変更はcommit前です。
+Phase 1の開発基盤、Phase 2の製造指示から在庫更新までの縦切り、Phase 3の原料入荷・固定工程・設備管理は確定済みです。Phase 4の在庫参照・出荷・集計・ダッシュボードは実装・検証済みで、変更はcommit前です。数量単位は`kg`、DBは`NUMERIC(15, 3)`、backendは`Decimal`を使用します。
 
 ## 採用技術
 
@@ -72,7 +72,7 @@ docker compose down
 
 ## Alembic
 
-Phase 2の初期revisionと、それに連続するPhase 3 revisionを追加済みです。開発DBまたはtest-dbへ適用後、差分検査を実行します。
+Phase 2の初期revisionからPhase 3、Phase 4へ連続するrevisionを追加済みです。開発DBまたはtest-dbへ適用後、差分検査を実行します。
 
 ```bash
 docker compose exec backend alembic upgrade head
@@ -151,7 +151,6 @@ Python runtime依存は`backend/requirements.txt`、development/test依存は`ba
 未実装:
 
 - 製造指示の下書き編集と工程実績
-- 在庫参照画面、出荷、集計、ダッシュボード
 - 仕入先マスタと各マスタの編集・有効無効管理
 - CSV取込
 
@@ -164,8 +163,18 @@ Python runtime依存は`backend/requirements.txt`、development/test依存は`ba
 - `http://localhost:5174/raw-material-receipts/new`
 - `http://localhost:5174/raw-material-receipts/:receiptId`
 - `http://localhost:5174/equipment`
+- `http://localhost:5174/inventory/raw-materials`
+- `http://localhost:5174/inventory/products`
+- `http://localhost:5174/inventory/transactions`
+- `http://localhost:5174/shipments`
+- `http://localhost:5174/shipments/new`
+- `http://localhost:5174/shipments/:shipmentId`
+- `http://localhost:5174/reports`
+- `http://localhost:5174/`（ダッシュボード）
 
 Phase 3の原料入荷は登録時に即時確定し、複数明細、原料残高、`RECEIPT`履歴を同一transactionで保存します。新しく指示済みにする製造指示には蒸熱・揉捻・乾燥の固定3工程を作成し、全工程完了後だけ製造完了できます。Phase 2で作成済みの工程0件注文には経過措置を維持します。
+
+Phase 4の出荷は`DRAFT`で登録・編集し、確定時に出荷行と製品残高をlockして、全明細の残高検証、減算、`SHIPMENT`履歴、`CONFIRMED`への変更を同一transactionで保存します。在庫残高APIは参照専用です。期間集計とダッシュボードは`Asia/Tokyo`の日付解釈で両端を含む期間を扱います。
 
 ## Runtime version確認元
 

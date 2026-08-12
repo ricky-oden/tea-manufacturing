@@ -74,7 +74,7 @@ response:
 | method | path | 用途 | 要件ID |
 |---|---|---|---|
 | GET | `/dashboard?date_from=&date_to=` | 概況取得 | TEA-FR-001 |
-| GET | `/reports/summary?date_from=&date_to=&group_by=` | 期間集計 | TEA-FR-008 |
+| GET | `/reports/summary?date_from=&date_to=` | 期間集計 | TEA-FR-008 |
 
 ### Raw material receipts
 
@@ -113,6 +113,8 @@ Phase 3の工程更新requestは`action: start | complete`、任意の`equipment
 
 在庫残高の汎用POST/PUT/PATCH endpointは設けない。
 
+残高一覧は`page`、`page_size`を受け取り、コード・名称、数量、単位`kg`、更新日時を返す。在庫履歴は`inventory_kind`、`transaction_type`、`tea_leaf_id`、`variety_id`、`product_id`、`date_from`、`date_to`、`page`、`page_size`を検索条件とする。
+
 ### Shipments
 
 | method | path | 用途 | 要件ID |
@@ -123,7 +125,9 @@ Phase 3の工程更新requestは`action: start | complete`、任意の`equipment
 | PUT | `/shipments/{shipment_id}` | 未確定出荷の編集 | TEA-FR-007 |
 | POST | `/shipments/{shipment_id}/confirm` | 出荷確定・製品減算 | TEA-FR-007、TEA-NFR-003 |
 
-出荷の確定前状態を設けるかは未確定であり、設けない場合は登録と確定を1つのPOSTに統合する。
+出荷は複数明細を持ち、登録時は`DRAFT`とする。`DRAFT`だけPUTと確定が可能で、`CONFIRMED`は読み取り専用とする。同一出荷番号、同一出荷内の製品重複、二重確定は統一エラーで拒否する。確定時は製品在庫減算と明細単位`SHIPMENT`履歴を同一transactionで保存する。
+
+集計とダッシュボードの`date_from`、`date_to`は必須で、`Asia/Tokyo`の日付として両端を含む。開始日が終了日より後の場合は`422 VALIDATION_ERROR`を返す。集計は入荷・製造完了・確定出荷、現在庫、マスタ別内訳を返し、ダッシュボードは製造状態別件数、在庫概況、期間内3数量を返す。
 
 ### Masters
 
