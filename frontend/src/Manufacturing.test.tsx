@@ -7,6 +7,7 @@ import {
   fetchOrders,
   transitionOrder,
 } from "./api/manufacturing";
+import { fetchProcesses } from "./api/phase3";
 import { renderApp } from "./test/renderApp";
 
 jest.mock("./api/manufacturing", () => ({
@@ -15,6 +16,11 @@ jest.mock("./api/manufacturing", () => ({
   transitionOrder: jest.fn(),
   fetchMasters: jest.fn(),
   createOrder: jest.fn(),
+}));
+jest.mock("./api/phase3", () => ({
+  ...jest.requireActual("./api/phase3"),
+  fetchProcesses: jest.fn(),
+  updateProcess: jest.fn(),
 }));
 
 const order = {
@@ -37,10 +43,12 @@ const masters = {
   equipment: [{ id: 2, code: "EQ-01", name: "蒸機", is_active: true }],
   "tea-leaves": [{ id: 3, code: "TL-01", name: "煎茶", is_active: true }],
   varieties: [{ id: 4, code: "V-01", name: "やぶきた", is_active: true }],
+  suppliers: [],
 };
 
 beforeEach(() => {
   jest.resetAllMocks();
+  jest.mocked(fetchProcesses).mockResolvedValue([]);
 });
 
 function mockMasterResponses() {

@@ -58,6 +58,14 @@ def add_balance(session: Session, ids: dict[str, int], quantity: str) -> None:
     session.commit()
 
 
+def complete_required_processes(client: TestClient, order_id: int) -> None:
+    processes = client.get(f"/api/v1/manufacturing-orders/{order_id}/processes").json()
+    for process in processes:
+        path = f"/api/v1/manufacturing-orders/{order_id}/processes/{process['id']}"
+        assert client.put(path, json={"action": "start"}).status_code == 200
+        assert client.put(path, json={"action": "complete"}).status_code == 200
+
+
 def create_order_in_status(
     client: TestClient,
     db_session: Session,
@@ -74,6 +82,7 @@ def create_order_in_status(
     if target_status in {"IN_PROGRESS", "COMPLETED"}:
         client.post(f"/api/v1/manufacturing-orders/{order_id}/start")
     if target_status == "COMPLETED":
+        complete_required_processes(client, order_id)
         client.post(f"/api/v1/manufacturing-orders/{order_id}/complete")
     return ids, order_id
 
@@ -121,6 +130,7 @@ def test_manufacturing_flow_updates_balances_and_history(
         client.post(f"/api/v1/manufacturing-orders/{order_id}/start").json()["status"]
         == "IN_PROGRESS"
     )
+    complete_required_processes(client, order_id)
     assert (
         client.post(f"/api/v1/manufacturing-orders/{order_id}/complete").json()["status"]
         == "COMPLETED"
@@ -153,6 +163,7 @@ def test_double_start_and_complete_do_not_repeat_inventory(
     client.post(f"/api/v1/manufacturing-orders/{order_id}/issue")
     client.post(f"/api/v1/manufacturing-orders/{order_id}/start")
     assert client.post(f"/api/v1/manufacturing-orders/{order_id}/start").status_code == 409
+    complete_required_processes(client, order_id)
     client.post(f"/api/v1/manufacturing-orders/{order_id}/complete")
     assert client.post(f"/api/v1/manufacturing-orders/{order_id}/complete").status_code == 409
     db_session.expire_all()
