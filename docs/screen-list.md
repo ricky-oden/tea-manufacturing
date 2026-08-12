@@ -27,8 +27,7 @@ PLAN_VERSION: `TEA-V1.0`
 | `/masters/varieties` | 品種マスタ | 一覧、登録、編集、有効・無効 | TEA-FR-009 |
 | `/masters/suppliers` | 仕入先マスタ | 一覧、登録、編集、有効・無効 | TEA-FR-009 |
 | `/masters/products` | 製品マスタ | 一覧、登録、編集、有効・無効 | TEA-FR-009 |
-| `/imports/products` | 製品CSV取込 | file選択、検証・取込、結果表示 | TEA-FR-011 |
-| `/imports/products/:jobId` | 製品CSV取込結果 | 件数、状態、エラーCSV取得 | TEA-FR-011 |
+| `/imports/products` | 製品CSV取込 | file選択、同期取込、Job結果・複数エラー表示、エラーCSV取得 | TEA-FR-011 |
 | その他 | Not Found | 存在しない画面であることを表示 | TEA-NFR-001 |
 
 ## 共通表示要件

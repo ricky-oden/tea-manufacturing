@@ -154,6 +154,8 @@ Phase 3では`supplier`のGET一覧・POST登録を追加し、`equipment`のGET
 | GET | `/imports/products/{job_id}` | 結果取得 | TEA-FR-011 |
 | GET | `/imports/products/{job_id}/errors.csv` | エラーCSV取得 | TEA-FR-011 |
 
+POSTはmultipart field `file`を受け取り、同期処理完了後のJobを返す。ファイル未指定は`422 VALIDATION_ERROR`、1 MiB超過は`413 FILE_TOO_LARGE`とする。CSV業務validation失敗はHTTP 200でFAILED Jobとエラー一覧を返し、後からJob詳細とエラーCSVを取得できる。成功Jobや存在しないJobのエラーCSV取得は`404`とする。
+
 ## 共通fetch client
 
 - API base URLを一箇所で設定する。

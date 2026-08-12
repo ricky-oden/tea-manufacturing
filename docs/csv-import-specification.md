@@ -11,6 +11,10 @@ PLAN_VERSION: `TEA-V1.0`
 ## ファイル仕様
 
 - 形式: header付きCSV
+- multipart field名: `file`
+- 拡張子: `.csv`
+- 最大ファイルサイズ: 1 MiB
+- 最大データ行数: 1,000行
 - 文字コード: UTF-8。UTF-8 BOMの有無は受け入れる。
 - 空行: ファイル末尾の空行は無視し、それ以外の空行は行エラーとする。
 - header名と順序は次のとおりとする。
@@ -27,7 +31,7 @@ P001,煎茶A,V001,true
 | `variety_code` | はい | 登録済みで有効な品種コード |
 | `is_active` | はい | `true`または`false` |
 
-最大文字長等の物理制約はDB詳細設計と同時に固定し、画面登録とCSV取込で同じ検証ルールを使用する。
+`product_code`は30文字以下、`product_name`は100文字以下とし、画面登録・DB列と同じ制約を使用する。
 
 ## 正常系
 
@@ -110,4 +114,4 @@ CSVとして正しくescapeし、カンマ、改行、引用符を含む入力�
 - `GET /api/v1/imports/products/{job_id}`
 - `GET /api/v1/imports/products/{job_id}/errors.csv`
 
-同期処理か非同期jobとするかはファイル上限と合わせて詳細設計で決定する。外部queueや外部storageは使用しない。
+upload request内で同期処理する。外部queueや外部storageは使用しない。CSV解析とエラーCSV生成にはPython標準`csv`を使用する。ファイル未指定は統一`422`、1 MiB超過は統一`413`、CSV業務validation失敗は保存済みFAILED Jobとして返す。

@@ -180,3 +180,15 @@ Phase 1の基盤test、Docker Compose、手動CI定義を実装した。Starlett
 - frontend各一覧のloading/error/empty、ページングとURL同期、履歴条件、複数明細登録、validation、送信中、入力保持、確定中、確定後読み取り専用、期間変更、ダッシュボード値、mutation後cache更新
 
 Phase 4の検証根拠は`backend/tests/test_phase4.py`と`frontend/src/Phase4.test.tsx`とする。これらのPostgreSQL/Jest実行、migration、lint、format、buildのいずれかが未実行または失敗中の場合、`TEA-FR-001/006/007/008`および`TEA-NFR-003`を検証済みと記録しない。
+
+## Phase 5 test
+
+- UTF-8／BOM、拡張子、1 MiB、header各異常、0件、途中空行、1,000行上限、必須、文字長、`is_active`形式
+- CSV内重複、DB既存重複、品種なし・無効品種、複数エラー収集と、1エラー時の製品・残高0件
+- 正常時の全製品・`0.000 kg`残高、Job状態・件数・詳細をPostgreSQLで確認
+- Productと残高のflush後強制例外で全rollbackし、安全な別transactionでFAILED Jobと`DATABASE_ERROR`を保存すること
+- 内部例外文字列を統一500応答・保存エラーへ露出しないこと
+- Job別エラーCSVの5列、入力行番号、カンマ・改行・引用符escape、Content-Disposition、成功Job・存在しないJobの拒否
+- frontendの初期説明、未選択disabled、upload中、成功・失敗件数、複数エラー、download導線、API失敗、同名file再選択、既存Job結果保持
+
+Phase 5の検証根拠は`backend/tests/test_csv_imports.py`と`frontend/src/CsvImportPage.test.tsx`とする。PostgreSQL/Jest実行、migration、lint、format、build、API疎通のいずれかが未実行または失敗中の場合、`TEA-FR-011`を検証済みと記録しない。

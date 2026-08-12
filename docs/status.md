@@ -6,9 +6,9 @@ PLAN_VERSION: `TEA-V1.0`
 
 ## 現在フェーズ
 
-Phase 0: 計画固定（完了）／Phase 1: 開発基盤（完了）／Phase 2: 最初の縦切り（完了）／Phase 3: 入荷・工程・設備（完了）／Phase 4: 在庫・出荷・集計（実装・検証完了、commit承認待ち）
+Phase 0からPhase 4: 完了／Phase 5: 製品マスタCSV取込（実装・検証完了、commit承認待ち）
 
-TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1からPhase 3は確定済みであり、Phase 4の在庫参照、出荷、期間集計、ダッシュボードを実装・検証した。CSV取込とPhase 6総合整備は未実装である。
+TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1からPhase 4は確定済みであり、Phase 5の製品マスタCSV取込を実装・検証した。Phase 6総合整備は未実装である。
 
 ## 要件状況
 
@@ -24,7 +24,7 @@ TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1からPhase 3
 | TEA-FR-008 | 集計 | はい | はい | はい |
 | TEA-FR-009 | マスタ管理 | はい | いいえ | いいえ |
 | TEA-FR-010 | 製造状態と操作制御 | はい | はい | はい |
-| TEA-FR-011 | 製品マスタCSV取込 | はい | いいえ | いいえ |
+| TEA-FR-011 | 製品マスタCSV取込 | はい | はい | はい |
 | TEA-FR-012 | 製造指示から在庫更新までの結合処理 | はい | はい | はい |
 | TEA-NFR-001 | API契約と統一エラー | はい | はい | はい |
 | TEA-NFR-002 | ページング | はい | いいえ | いいえ |
@@ -68,7 +68,7 @@ TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1からPhase 3
 
 ## 次の承認ゲート
 
-Phase 4の検証結果をユーザーが確認し、commitを承認すること。
+Phase 5の検証結果をユーザーが確認し、commitを承認すること。
 
 ## Phase 2範囲の状態
 
@@ -109,3 +109,14 @@ Phase 4の検証結果をユーザーが確認し、commitを承認すること�
 - Phase 4検証: Jest 43件、pytest 46件、frontend/backend lint・format、Vite build、開発/test DB migration・Alembic check、ComposeとAPI疎通を実施
 - 接続DB: 開発`db:5432/tea_manufacturing`（named volume保持）、test`test-db:5432/tea_manufacturing_test`（tmpfs、clean migration検証）
 - `TEA-FR-001/006/007/008`と`TEA-NFR-003`は受入条件を実装・検証済み。`TEA-NFR-002/005`は後続のマスタ・CSV等を含む全体完了まで未完了とする。
+
+## Phase 5範囲の状態
+
+- Model/migration: `CsvImportJob`、`CsvImportError`、取込種別・状態enum、外部キー・indexをPhase 4から連続するrevisionで追加
+- 処理: 製品マスタCSVをrequest内で同期処理。UTF-8/BOM、`.csv`、1 MiB、1,000行、header、必須・長さ・真偽値、各重複、品種存在・有効性を決定順で検証
+- transaction: validation失敗は製品登録を開始せずFAILED Jobと全エラーを保存。正常時はProduct、`0.000 kg`のProductInventoryBalance、Job成功状態を同一transactionで保存
+- rollback: DB途中例外ではProduct・残高を全rollback後、別transactionでFAILED Jobと安全な`DATABASE_ERROR`を保存し、内部例外文字列を露出しない
+- API/frontend: upload、Job詳細、Job別エラーCSVと`/imports/products`画面を実装。処理中disabled、結果保持、複数エラー、再選択、download導線を提供
+- Phase 5検証: Jest 49件、pytest 71件、frontend/backend lint・format、Vite build、開発/test DB migration・Alembic check、backend/Vite proxy upload・error CSVが成功
+- 接続DB: 開発`db:5432/tea_manufacturing`（named volume保持）、test`test-db:5432/tea_manufacturing_test`（tmpfs、clean migration検証）
+- `TEA-FR-011`は実装・検証済み。`TEA-FR-009`は製品CSV登録部分のみ実装済みで、全マスタ管理要件は未完了のままとする。

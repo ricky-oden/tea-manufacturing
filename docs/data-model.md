@@ -137,7 +137,7 @@ PLAN_VERSION: `TEA-V1.0`
 - total_rows
 - success_rows
 - error_rows
-- created_at / completed_at
+- accepted_at / completed_at
 
 ### `CsvImportError`
 
@@ -148,7 +148,7 @@ PLAN_VERSION: `TEA-V1.0`
 - error_message
 - input_value
 
-エラーCSVをDB項目から再構成するか、生成物として一時保存するかは実装時に外部サービスを使わない方法で決定する。
+Jobは処理開始時に`PROCESSING`で保存し、検証または登録完了時に`SUCCEEDED`／`FAILED`へ更新する。`status`と`accepted_at`へindexを持つ。エラーはJob外部キーとJob ID indexを持ち、Job削除時はcascadeする。エラーCSVはJob別エラーからPython標準`csv`で同期生成し、ファイルを永続化しない。
 
 ## 主要な関係
 
@@ -190,3 +190,7 @@ Phase 2 revisionへ連続する1 revisionで、仕入先、原料入荷ヘッダ
 ## Phase 4 migration範囲
 
 Phase 3 revisionへ連続する1 revisionで、出荷ヘッダー・明細を追加し、在庫取引種別へ`SHIPMENT`を追加する。出荷番号unique、同一出荷内製品unique、数量正数check、製品外部キーをDB制約として持つ。集計とダッシュボードは既存業務tableから算出し、集計専用tableは追加しない。
+
+## Phase 5 migration範囲
+
+Phase 4 revisionへ連続する1 revisionで`csv_import_jobs`、`csv_import_errors`、取込種別・状態enum、Job外部キー、status・受付日時・Job ID indexを追加する。製品と製品在庫残高は既存tableへ同一transactionで登録する。

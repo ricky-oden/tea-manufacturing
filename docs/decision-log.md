@@ -130,6 +130,18 @@ PLAN_VERSION: `TEA-V1.0`
 - 集計は入荷・製造完了・確定出荷、現在庫、茶葉・品種別入荷、製品別製造・出荷を返し、未確定出荷を除外する。
 - ダッシュボードは製造状態別件数、原料・製品在庫概況、指定期間の入荷・製造完了・確定出荷を返す。frontend初期期間は当日を含む直近30日とする。
 
+## 2026-08-12: Phase 5製品マスタCSV取込の詳細設計
+
+状態: 承認済み
+
+- 製品マスタCSVだけをupload request内で同期処理し、Celery、Redis、外部queue、外部storageを使用しない。
+- multipart fieldは`file`、拡張子は`.csv`、文字コードはUTF-8またはUTF-8 BOM付き、最大ファイルサイズは1 MiB、最大データ行数は1,000行とする。
+- Python標準`csv`で解析し、末尾空行は無視、データ途中の空行は行エラーとする。`is_active`は小文字`true`または`false`だけを受け付ける。
+- validation失敗は製品登録transactionを開始せず、FAILED Jobと可能な全行エラーを保存する。全行正常時は製品、`0.000 kg`の製品在庫残高、Job成功状態を同一transactionで保存する。
+- DB途中例外は製品・残高をrollbackし、新しい安全なtransactionでFAILED Jobと`DATABASE_ERROR`を保存する。内部例外文字列は応答や保存エラーへ露出しない。
+- エラーCSVはDBのJob別エラーから標準`csv`で同期生成し、外部storageや生成ファイルを永続化しない。
+- FastAPIのmultipart解析に必要なruntime依存として`python-multipart==0.0.32`を完全固定する。
+
 ## PROPOSED_CHANGE履歴
 
 なし。
