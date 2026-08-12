@@ -40,12 +40,18 @@ class InventoryTransactionType(StrEnum):
     RECEIPT = "RECEIPT"
     MANUFACTURING_CONSUMPTION = "MANUFACTURING_CONSUMPTION"
     MANUFACTURING_OUTPUT = "MANUFACTURING_OUTPUT"
+    SHIPMENT = "SHIPMENT"
 
 
 class ProcessStatus(StrEnum):
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
+
+
+class ShipmentStatus(StrEnum):
+    DRAFT = "DRAFT"
+    CONFIRMED = "CONFIRMED"
 
 
 class TimestampMixin:
@@ -184,6 +190,35 @@ class RawMaterialReceiptLine(Base):
     quantity: Mapped[Decimal] = mapped_column(QUANTITY_TYPE)
     tea_leaf: Mapped[TeaLeaf] = relationship()
     variety: Mapped[Variety] = relationship()
+
+
+class Shipment(TimestampMixin, Base):
+    __tablename__ = "shipments"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    shipment_number: Mapped[str] = mapped_column(String(30), unique=True)
+    shipped_date: Mapped[date] = mapped_column(Date)
+    status: Mapped[ShipmentStatus] = mapped_column(
+        Enum(ShipmentStatus, name="shipment_status"), default=ShipmentStatus.DRAFT
+    )
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    lines: Mapped[list["ShipmentLine"]] = relationship(
+        cascade="all, delete-orphan", order_by="ShipmentLine.id"
+    )
+
+
+class ShipmentLine(Base):
+    __tablename__ = "shipment_lines"
+    __table_args__ = (
+        CheckConstraint("quantity > 0", name="ck_shipment_line_quantity_positive"),
+        UniqueConstraint("shipment_id", "product_id", name="uq_shipment_product"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    shipment_id: Mapped[int] = mapped_column(ForeignKey("shipments.id", ondelete="CASCADE"))
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="RESTRICT"))
+    quantity: Mapped[Decimal] = mapped_column(QUANTITY_TYPE)
+    product: Mapped[Product] = relationship()
 
 
 class RawMaterialInventoryBalance(TimestampMixin, Base):
