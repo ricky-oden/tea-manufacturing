@@ -18,6 +18,13 @@ import {
   transitionOrder,
   type OrderInput,
 } from "./api/manufacturing";
+import {
+  EquipmentPage,
+  ReceiptDetailPage,
+  ProcessPanel,
+  ReceiptFormPage,
+  ReceiptListPage,
+} from "./Phase3";
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -27,7 +34,9 @@ function Layout({ children }: { children: React.ReactNode }) {
         <nav>
           <Link to="/">基盤</Link>{" "}
           <Link to="/manufacturing-orders">製造指示</Link>{" "}
-          <Link to="/manufacturing-orders/new">新規登録</Link>
+          <Link to="/manufacturing-orders/new">新規登録</Link>{" "}
+          <Link to="/raw-material-receipts">原料入荷</Link>{" "}
+          <Link to="/equipment">設備</Link>
         </nav>
       </header>
       <main className="app-shell">{children}</main>
@@ -314,6 +323,10 @@ function OrderDetailPage() {
           {["COMPLETED", "CANCELLED"].includes(query.data.status) && (
             <p>完了・取消済みのため読み取り専用です。</p>
           )}
+          <ProcessPanel
+            orderId={query.data.id}
+            orderStatus={query.data.status}
+          />
         </section>
       )}
     </Layout>
@@ -329,6 +342,38 @@ export function App() {
       <Route
         path="/manufacturing-orders/:orderId"
         element={<OrderDetailPage />}
+      />
+      <Route
+        path="/raw-material-receipts"
+        element={
+          <Layout>
+            <ReceiptListPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/raw-material-receipts/new"
+        element={
+          <Layout>
+            <ReceiptFormPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/raw-material-receipts/:receiptId"
+        element={
+          <Layout>
+            <ReceiptDetailPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/equipment"
+        element={
+          <Layout>
+            <EquipmentPage />
+          </Layout>
+        }
       />
       <Route
         path="*"

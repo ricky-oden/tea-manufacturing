@@ -65,5 +65,5 @@ export const transitionOrder = (id: number, action: string) =>
     method: "POST",
   });
 export const fetchMasters = (
-  resource: "tea-leaves" | "varieties" | "equipment" | "products",
+  resource: "tea-leaves" | "varieties" | "equipment" | "products" | "suppliers",
 ) => apiFetch<Master[]>(`/masters/${resource}`);
