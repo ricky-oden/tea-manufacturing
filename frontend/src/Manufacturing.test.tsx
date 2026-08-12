@@ -36,6 +36,8 @@ const order = {
   started_at: null,
   completed_at: null,
   materials: [],
+  processes: [],
+  inventory_transactions: [],
 };
 
 const masters = {

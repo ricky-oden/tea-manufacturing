@@ -118,7 +118,7 @@ def test_receipt_rejects_duplicate_number_inactive_master_and_invalid_quantity(
     assert duplicate.status_code == 409
     assert duplicate.json()["code"] == "DUPLICATE_RECEIPT_NUMBER"
 
-    supplier = client.get("/api/v1/masters/suppliers").json()[0]
+    supplier = client.get("/api/v1/masters/suppliers").json()["items"][0]
     stored_supplier = db_session.get(Supplier, supplier["id"])
     stored_supplier.is_active = False
     db_session.commit()

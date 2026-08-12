@@ -56,6 +56,8 @@ const order = {
   started_at: "2026-08-12T01:00:00Z",
   completed_at: null,
   materials: [],
+  processes: [],
+  inventory_transactions: [],
 };
 
 const processes = [
