@@ -13,6 +13,7 @@ from sqlalchemy import (
     Index,
     Numeric,
     String,
+    Text,
     UniqueConstraint,
     func,
 )
@@ -52,6 +53,16 @@ class ProcessStatus(StrEnum):
 class ShipmentStatus(StrEnum):
     DRAFT = "DRAFT"
     CONFIRMED = "CONFIRMED"
+
+
+class CsvImportType(StrEnum):
+    PRODUCT_MASTER = "PRODUCT_MASTER"
+
+
+class CsvImportStatus(StrEnum):
+    PROCESSING = "PROCESSING"
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
 
 
 class TimestampMixin:
@@ -219,6 +230,46 @@ class ShipmentLine(Base):
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="RESTRICT"))
     quantity: Mapped[Decimal] = mapped_column(QUANTITY_TYPE)
     product: Mapped[Product] = relationship()
+
+
+class CsvImportJob(Base):
+    __tablename__ = "csv_import_jobs"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    import_type: Mapped[CsvImportType] = mapped_column(
+        Enum(CsvImportType, name="csv_import_type"),
+        default=CsvImportType.PRODUCT_MASTER,
+    )
+    file_name: Mapped[str] = mapped_column(String(255))
+    status: Mapped[CsvImportStatus] = mapped_column(
+        Enum(CsvImportStatus, name="csv_import_status"),
+        default=CsvImportStatus.PROCESSING,
+        index=True,
+    )
+    total_rows: Mapped[int] = mapped_column(default=0)
+    success_rows: Mapped[int] = mapped_column(default=0)
+    error_rows: Mapped[int] = mapped_column(default=0)
+    accepted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    errors: Mapped[list["CsvImportError"]] = relationship(
+        cascade="all, delete-orphan", order_by="CsvImportError.id"
+    )
+
+
+class CsvImportError(Base):
+    __tablename__ = "csv_import_errors"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    csv_import_job_id: Mapped[int] = mapped_column(
+        ForeignKey("csv_import_jobs.id", ondelete="CASCADE"), index=True
+    )
+    row_number: Mapped[int]
+    field_name: Mapped[str] = mapped_column(String(50), default="")
+    error_code: Mapped[str] = mapped_column(String(50))
+    error_message: Mapped[str] = mapped_column(String(200))
+    input_value: Mapped[str] = mapped_column(Text, default="")
 
 
 class RawMaterialInventoryBalance(TimestampMixin, Base):

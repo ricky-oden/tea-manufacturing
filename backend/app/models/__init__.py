@@ -1,4 +1,8 @@
 from app.models.manufacturing import (
+    CsvImportError,
+    CsvImportJob,
+    CsvImportStatus,
+    CsvImportType,
     Equipment,
     InventoryTransaction,
     ManufacturingMaterial,
@@ -18,6 +22,10 @@ from app.models.manufacturing import (
 
 __all__ = [
     "Equipment",
+    "CsvImportError",
+    "CsvImportJob",
+    "CsvImportStatus",
+    "CsvImportType",
     "InventoryTransaction",
     "ManufacturingMaterial",
     "ManufacturingOrder",
