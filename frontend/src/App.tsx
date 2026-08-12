@@ -25,6 +25,15 @@ import {
   ReceiptFormPage,
   ReceiptListPage,
 } from "./Phase3";
+import {
+  DashboardPanel,
+  InventoryBalancePage,
+  InventoryTransactionsPage,
+  ReportsPage,
+  ShipmentDetailPage,
+  ShipmentFormPage,
+  ShipmentListPage,
+} from "./Phase4";
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -32,11 +41,15 @@ function Layout({ children }: { children: React.ReactNode }) {
       <header>
         <strong>TEA-V1 お茶製造管理システム</strong>
         <nav>
-          <Link to="/">基盤</Link>{" "}
+          <Link to="/">ダッシュボード</Link>{" "}
           <Link to="/manufacturing-orders">製造指示</Link>{" "}
           <Link to="/manufacturing-orders/new">新規登録</Link>{" "}
           <Link to="/raw-material-receipts">原料入荷</Link>{" "}
-          <Link to="/equipment">設備</Link>
+          <Link to="/equipment">設備</Link>{" "}
+          <Link to="/inventory/raw-materials">原料在庫</Link>{" "}
+          <Link to="/inventory/products">製品在庫</Link>{" "}
+          <Link to="/inventory/transactions">在庫履歴</Link>{" "}
+          <Link to="/shipments">出荷</Link> <Link to="/reports">集計</Link>
         </nav>
       </header>
       <main className="app-shell">{children}</main>
@@ -60,6 +73,7 @@ function HealthPage() {
         )}
         {query.isError && <p role="alert">backend health失敗</p>}
       </section>
+      <DashboardPanel />
     </Layout>
   );
 }
@@ -372,6 +386,62 @@ export function App() {
         element={
           <Layout>
             <EquipmentPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/inventory/raw-materials"
+        element={
+          <Layout>
+            <InventoryBalancePage kind="raw" />
+          </Layout>
+        }
+      />
+      <Route
+        path="/inventory/products"
+        element={
+          <Layout>
+            <InventoryBalancePage kind="product" />
+          </Layout>
+        }
+      />
+      <Route
+        path="/inventory/transactions"
+        element={
+          <Layout>
+            <InventoryTransactionsPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/shipments"
+        element={
+          <Layout>
+            <ShipmentListPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/shipments/new"
+        element={
+          <Layout>
+            <ShipmentFormPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/shipments/:shipmentId"
+        element={
+          <Layout>
+            <ShipmentDetailPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <Layout>
+            <ReportsPage />
           </Layout>
         }
       />
