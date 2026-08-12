@@ -13,7 +13,9 @@ from app.models.manufacturing import (
     InventoryTransactionType,
     ManufacturingMaterial,
     ManufacturingOrder,
+    ManufacturingProcess,
     ManufacturingStatus,
+    ProcessStatus,
     Product,
     ProductInventoryBalance,
     RawMaterialInventoryBalance,
@@ -41,6 +43,21 @@ def create_master(session: Session, model: type, payload: dict):
         session.flush()
         if model is Product:
             session.add(ProductInventoryBalance(product_id=instance.id, quantity=Decimal("0.000")))
+        session.commit()
+    except IntegrityError as exc:
+        session.rollback()
+        raise ConflictError("同じコードが既に登録されています。", "DUPLICATE_CODE") from exc
+    session.refresh(instance)
+    return instance
+
+
+def update_master(session: Session, model: type, identifier: int, payload: dict):
+    instance = session.get(model, identifier)
+    if instance is None:
+        raise NotFoundError("マスタが見つかりません。")
+    for field, value in payload.items():
+        setattr(instance, field, value)
+    try:
         session.commit()
     except IntegrityError as exc:
         session.rollback()
@@ -90,6 +107,7 @@ def get_order(session: Session, order_id: int, *, lock: bool = False) -> Manufac
             selectinload(ManufacturingOrder.product),
             selectinload(ManufacturingOrder.equipment),
             selectinload(ManufacturingOrder.materials),
+            selectinload(ManufacturingOrder.processes),
         )
     )
     if lock:
@@ -134,6 +152,18 @@ def issue_order(session: Session, order_id: int) -> ManufacturingOrder:
     for material in order.materials:
         _active(session, TeaLeaf, material.tea_leaf_id, "茶葉")
         _active(session, Variety, material.variety_id, "品種")
+    if not order.processes:
+        from app.services.phase3 import PROCESS_DEFINITIONS
+
+        order.processes = [
+            ManufacturingProcess(
+                sequence=sequence,
+                process_code=process_code,
+                process_name=process_name,
+                status=ProcessStatus.PENDING,
+            )
+            for sequence, process_code, process_name in PROCESS_DEFINITIONS
+        ]
     order.status = ManufacturingStatus.ISSUED
     session.commit()
     return get_order(session, order_id)
@@ -184,6 +214,10 @@ def complete_order(session: Session, order_id: int) -> ManufacturingOrder:
         raise ConflictError("製造中の製造指示だけ完了できます。", "INVALID_STATUS_TRANSITION")
     if order.planned_quantity <= 0:
         raise BusinessValidationError("予定数量は正数である必要があります。")
+    if order.processes and any(
+        process.status is not ProcessStatus.COMPLETED for process in order.processes
+    ):
+        raise ConflictError("必須工程が完了していません。", "PROCESS_NOT_COMPLETED")
     product = session.get(Product, order.product_id)
     if product is None:
         raise NotFoundError("製品が見つかりません。")
