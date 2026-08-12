@@ -31,8 +31,18 @@ class AppError(Exception):
 
 
 class ConflictError(AppError):
-    def __init__(self, message: str = "処理が競合しました。") -> None:
-        super().__init__(status_code=409, code="CONFLICT", message=message)
+    def __init__(self, message: str = "処理が競合しました。", code: str = "CONFLICT") -> None:
+        super().__init__(status_code=409, code=code, message=message)
+
+
+class NotFoundError(AppError):
+    def __init__(self, message: str = "指定されたリソースが見つかりません。") -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message=message)
+
+
+class BusinessValidationError(AppError):
+    def __init__(self, message: str) -> None:
+        super().__init__(status_code=400, code="BUSINESS_VALIDATION_ERROR", message=message)
 
 
 def error_response(
