@@ -4,7 +4,7 @@ PLAN_VERSION: `TEA-V1.0`
 
 製茶会社における原料入荷、製造指示、工程、設備、在庫、出荷、集計、マスタ、CSV取込を題材に、業務システムの処理を学ぶための単一事業所向けアプリケーションです。
 
-Phase 1の開発基盤として、health表示、統一APIエラー、Docker Compose、Alembic、テスト、手動実行限定CIを実装しています。製造、在庫、マスタ、CSV等の業務機能はまだ未実装です。
+Phase 1の開発基盤に加え、Phase 2で製造指示の最初の縦切りを実装・検証済みです。数量単位は`kg`、DBは`NUMERIC(15, 3)`、backendは`Decimal`を使用します。Phase 2の変更はcommit前です。
 
 ## 採用技術
 
@@ -72,7 +72,7 @@ docker compose down
 
 ## Alembic
 
-業務モデルとrevisionはPhase 2以降に追加します。Phase 1では起動と差分検査だけを提供します。
+Phase 2の業務モデルと初期revisionを追加済みです。開発DBまたはtest-dbへ適用後、差分検査を実行します。
 
 ```bash
 docker compose exec backend alembic upgrade head
@@ -137,7 +137,7 @@ Python runtime依存は`backend/requirements.txt`、development/test依存は`ba
 
 `.github/workflows/ci.yml`は`workflow_dispatch`による手動実行だけを許可します。workflow権限は`contents: read`に限定し、push、pull request、schedule trigger、artifact保存、deployは設定していません。
 
-## Phase 1の範囲
+## 実装範囲
 
 実装済み:
 
@@ -150,9 +150,16 @@ Python runtime依存は`backend/requirements.txt`、development/test依存は`ba
 
 未実装:
 
-- 製造指示、工程、設備、在庫、入荷、出荷、集計
-- 茶葉、品種、仕入先、設備、製品マスタ
+- 製造指示の下書き編集と工程実績
+- 原料入荷、設備管理画面、在庫参照画面、出荷、集計
+- 仕入先マスタと各マスタの編集・有効無効管理
 - CSV取込
+
+Phase 2の画面:
+
+- `http://localhost:5174/manufacturing-orders`
+- `http://localhost:5174/manufacturing-orders/new`
+- `http://localhost:5174/manufacturing-orders/:orderId`
 
 ## Runtime version確認元
 

@@ -66,11 +66,11 @@ DRAFT ──issue──> ISSUED ──start──> IN_PROGRESS ──complete─
 ### 製造完了
 
 - 現在状態が`IN_PROGRESS`である。
-- 完了必須となる工程がすべて完了している。
+- Phase 2では工程行0件を許容し、工程行がないことを完了拒否理由にしない。
 - 製造指示と製品在庫行をlock取得後に再検証する。
 - 製品加算、増減履歴、`COMPLETED`への変更を同一transactionで行う。
 
-工程の具体的な必須条件は工程設計と一緒に確定する。歩留まり計算は行わないため、初期設計では製造指示の予定数量を製品在庫へ加算する。
+Phase 3で工程行が存在する場合に完了必須工程がすべて完了している条件を追加する。工程名、工程数、必須工程はPhase 3まで未確定とし、Phase 2でダミー工程を作成しない。歩留まり計算は行わないため、製造指示の予定数量を製品在庫へ加算する。
 
 ### 取消
 
@@ -94,3 +94,10 @@ DRAFT ──issue──> ISSUED ──start──> IN_PROGRESS ──complete─
 - `POST /api/v1/manufacturing-orders/{id}/cancel`
 
 状態を直接指定する汎用更新APIは設けない。
+
+## Phase 2検証根拠
+
+- `DRAFT → CANCELLED`と`ISSUED → CANCELLED`をAPI testで確認する。
+- `DRAFT`からstart／complete、`ISSUED`からcomplete、`IN_PROGRESS`からissue／cancel、`COMPLETED`と`CANCELLED`からの再操作をparameterized API testで拒否確認する。
+- 各拒否で`409`、`INVALID_STATUS_TRANSITION`、状態・残高・履歴の無更新を確認する。
+- frontend component testで`IN_PROGRESS`には製造完了だけを表示し、操作中disabledと操作失敗表示を確認する。

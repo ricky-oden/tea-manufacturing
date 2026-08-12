@@ -141,3 +141,18 @@ Phase 1のtest成功を、未実装の製造、在庫、出荷、マスタ、CSV
 ## 現在の状態
 
 Phase 1の基盤test、Docker Compose、手動CI定義を実装した。Starlette TestClientはdevelopment/test依存のhttpx2を使用する。業務機能testは該当フェーズまで未実装・未検証である。
+
+## Phase 2 test
+
+- `kg`数量の正数、小数3桁、最小`0.001`のAPI validation
+- 必要マスタ、製造指示の登録・一覧・詳細、複数page、状態絞り込み、不正ページ値
+- `DRAFT`と`ISSUED`からの取消、代表的な許可外遷移の`409 INVALID_STATUS_TRANSITION`と無更新
+- PostgreSQL行lock後の原料残高減算、製品残高加算、増減履歴
+- 原料不足時の状態・残高・履歴rollback
+- transaction内でflush後に強制例外を発生させ、状態・残高・履歴の全rollbackと統一500を確認
+- 独立したsession／connectionから同じ製造指示へ開始を同時要求し、1成功・1拒否と1回分だけの在庫更新を確認
+- 二重開始・二重完了で在庫が重複更新されないこと
+- 工程行0件でもPhase 2の製造完了が成功すること
+- frontendのloading、error、empty、登録payload、送信中disabled、入力保持、状態別操作、操作失敗、読み取り専用表示
+
+`TEA-FR-010`の検証根拠は許可取消と禁止遷移のparameterized API test、および状態別frontend component testとする。`TEA-FR-012`受入条件6と`TEA-NFR-003`受入条件5の検証根拠は、PostgreSQL上の強制例外rollback testと同時開始testとする。これらを未実行または失敗した場合は該当要件を検証済みと記録しない。

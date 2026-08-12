@@ -6,9 +6,9 @@ PLAN_VERSION: `TEA-V1.0`
 
 ## 現在フェーズ
 
-Phase 0: 計画固定（完了）／Phase 1: 開発基盤（完了）／Phase 2: 最初の縦切り（開始承認待ち）
+Phase 0: 計画固定（完了）／Phase 1: 開発基盤（完了）／Phase 2: 最初の縦切り（実装・検証完了、commit承認待ち）
 
-TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1ではhealth、統一APIエラー、Docker Compose、Alembic、test、手動CIの開発基盤を実装した。製造、在庫、マスタ、CSV等の業務機能は未実装である。
+TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1の開発基盤と、Phase 2の製造指示から在庫更新までの最初の縦切りを実装・検証した。後続フェーズの入荷、工程、出荷、集計、CSV等は未実装である。
 
 ## 要件状況
 
@@ -23,9 +23,9 @@ TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1ではhealth�
 | TEA-FR-007 | 出荷 | はい | いいえ | いいえ |
 | TEA-FR-008 | 集計 | はい | いいえ | いいえ |
 | TEA-FR-009 | マスタ管理 | はい | いいえ | いいえ |
-| TEA-FR-010 | 製造状態と操作制御 | はい | いいえ | いいえ |
+| TEA-FR-010 | 製造状態と操作制御 | はい | はい | はい |
 | TEA-FR-011 | 製品マスタCSV取込 | はい | いいえ | いいえ |
-| TEA-FR-012 | 製造指示から在庫更新までの結合処理 | はい | いいえ | いいえ |
+| TEA-FR-012 | 製造指示から在庫更新までの結合処理 | はい | はい | はい |
 | TEA-NFR-001 | API契約と統一エラー | はい | はい | はい |
 | TEA-NFR-002 | ページング | はい | いいえ | いいえ |
 | TEA-NFR-003 | 在庫取引の整合性と重複拒否 | はい | いいえ | いいえ |
@@ -68,4 +68,20 @@ TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1ではhealth�
 
 ## 次の承認ゲート
 
-ユーザーがPhase 2「最初の縦切り」の実装開始を明示承認すること。
+Phase 2の検証結果をユーザーが確認し、commitを承認すること。
+
+## Phase 2範囲の状態
+
+- 数量仕様: `kg`、`NUMERIC(15, 3)`、backend `Decimal`、frontend `step=0.001`
+- Model/migration: 茶葉、品種、設備、製品、製造指示・使用原料、原料・製品残高、在庫履歴
+- API: 必要マスタの一覧・登録、製造指示の登録・一覧・詳細、issue/start/complete/cancel
+- frontend: 製造指示一覧・登録・詳細、loading/error/empty、状態別操作
+- 工程: Phase 2では行を作成せず、0件でも製造完了可能。Phase 3の具体定義は未確定
+- Phase 2検証: Jest 15件、pytest 30件、frontend/backend formatter・lint、Vite build、Compose config/up、開発DBのAlembic checkが成功
+- `TEA-FR-010`: `DRAFT`・`ISSUED`からの取消、代表的な禁止遷移7件、状態・残高・履歴の無更新、frontend状態別操作を直接検証
+- `TEA-FR-012`: PostgreSQL transaction内のflush後強制例外で状態・原料残高・製品残高・履歴の全rollbackと統一500を直接検証
+- 同時開始: 独立session／connectionの2要求で1成功・1拒否、原料残高`7.000 kg`、消費履歴1件、製造状態`IN_PROGRESS`を確認
+- ページング: 5件に対するpage 1/2、page size 2、total 5、total pages 3、重複なし、状態絞り込み、不正値の統一validation errorを確認
+- 接続DB: 開発`db:5432/tea_manufacturing`、test`test-db:5432/tea_manufacturing_test`。数量列`NUMERIC(15, 3)`を実DBで確認
+- `TEA-FR-003/005/006/009`はPhase 2該当部分を実装したが、編集、工程、管理画面等の後続受入条件が残るため要件全体は未実装・未検証のままとする。
+- `TEA-NFR-002/003/005`も後続API・出荷・業務testが残るため要件全体は未完了とする。

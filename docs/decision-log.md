@@ -92,6 +92,17 @@ PLAN_VERSION: `TEA-V1.0`
 - frontendはdevelopment containerとVite production build用build stageまでとし、production配信runtimeとdeploymentは実装しない。
 - frontendのnode_modules named volumeはnodeユーザー所有とし、development container内で非rootの`npm ci`を可能にする。
 
+## 2026-08-12: Phase 2数量・完了条件の詳細設計
+
+状態: 承認済み
+
+- 原料・製品数量の基準単位は`kg`、最小値は`0.001 kg`、小数3桁とする。
+- DBは`NUMERIC(15, 3)`、backendはPython `Decimal`を使用し、0以下を拒否する。
+- frontendは`kg`を表示し、数量入力の`step`と`min`を`0.001`とする。
+- 単位換算と別単位は追加しない。
+- Phase 2では工程行を作成せず、工程行0件は製造完了の拒否理由としない。
+- Phase 3で工程行が存在する場合の必須工程完了条件を追加する。工程名・工程数・必須工程は未確定のまま維持する。
+
 ## PROPOSED_CHANGE履歴
 
 なし。

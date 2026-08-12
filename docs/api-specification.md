@@ -11,6 +11,7 @@ base path: `/api/v1`
 - request/responseはCSVファイル送受信を除きJSONとする。
 - 日付は`YYYY-MM-DD`、日時はtimezoneを含むISO 8601文字列とする。
 - 数量は浮動小数点誤差を避ける型としてbackend/DBで扱い、JSON上は数値として返す。
+- 原料・製品数量の単位は`kg`、最小値は`0.001`、小数3桁とする。backendは`Decimal`、DBは`NUMERIC(15, 3)`を正とする。
 
 ### ページング
 
@@ -32,7 +33,7 @@ response:
 }
 ```
 
-`page_size`の既定値と上限は実装前の詳細設計で全API共通値として固定する。
+`page_size`の既定値は20、上限は100とし、Phase 2以降のページングAPIで共通利用する。
 
 ### 統一エラー
 
@@ -134,6 +135,8 @@ resourceは`tea-leaves`、`varieties`、`suppliers`、`equipment`、`products`�
 | PUT | `/masters/{resource}/{id}` | 編集・有効無効変更 | TEA-FR-009 |
 
 DELETE endpointは設けない。
+
+Phase 2では最初の縦切りに必要な`tea-leaves`、`varieties`、`equipment`、`products`のGET一覧とPOST登録を実装する。詳細・編集・有効無効の管理画面は各マスタの担当フェーズで補完する。
 
 ### Product CSV imports
 

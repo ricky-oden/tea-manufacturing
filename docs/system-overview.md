@@ -37,6 +37,14 @@ PostgreSQL 16.14
 - pytestはapplication import前に検証済み`TEST_DATABASE_URL`を`DATABASE_URL`へ適用し、SQLAlchemy engineとsession factoryを遅延生成する。
 - Phase 1で実装するAPIは`GET /api/v1/health`だけとし、業務API・Modelは作成しない。
 
+## Phase 2 最初の縦切り
+
+- 茶葉、品種、設備、製品の必要最小限のマスタと、製造指示・使用原料・在庫残高・増減履歴をPostgreSQLへ追加する。
+- 製造指示の登録・一覧・詳細と、issue/start/complete/cancelを`/api/v1`配下へ追加する。
+- 製造開始では原料残高と履歴、製造完了では製品残高と履歴を状態変更と同一transactionで更新する。
+- 原料・製品数量は`kg`、`NUMERIC(15, 3)`、backend `Decimal`とする。
+- 工程行は作らず、0件でも製造完了可能とする。工程条件はPhase 3で追加する。
+
 ## 主要業務フロー
 
 ### 原料入荷
