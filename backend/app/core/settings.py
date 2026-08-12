@@ -14,6 +14,7 @@ class Settings(BaseSettings):
         "postgresql+psycopg://tea_test:tea_test_password@test-db:5432/tea_manufacturing_test"
     )
     cors_allowed_origins: str = "http://localhost:5174"
+    app_timezone: str = "Asia/Tokyo"
 
     @property
     def cors_origins(self) -> list[str]:

@@ -45,6 +45,11 @@ class BusinessValidationError(AppError):
         super().__init__(status_code=400, code="BUSINESS_VALIDATION_ERROR", message=message)
 
 
+class ValidationError(AppError):
+    def __init__(self, message: str = "入力内容を確認してください。") -> None:
+        super().__init__(status_code=422, code="VALIDATION_ERROR", message=message)
+
+
 def error_response(
     *,
     status_code: int,
