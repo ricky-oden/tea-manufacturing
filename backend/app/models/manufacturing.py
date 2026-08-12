@@ -37,8 +37,15 @@ class InventoryKind(StrEnum):
 
 
 class InventoryTransactionType(StrEnum):
+    RECEIPT = "RECEIPT"
     MANUFACTURING_CONSUMPTION = "MANUFACTURING_CONSUMPTION"
     MANUFACTURING_OUTPUT = "MANUFACTURING_OUTPUT"
+
+
+class ProcessStatus(StrEnum):
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
 
 
 class TimestampMixin:
@@ -65,6 +72,10 @@ class Variety(MasterMixin, Base):
 
 class Equipment(MasterMixin, Base):
     __tablename__ = "equipment"
+
+
+class Supplier(MasterMixin, Base):
+    __tablename__ = "suppliers"
 
 
 class Product(MasterMixin, Base):
@@ -95,6 +106,9 @@ class ManufacturingOrder(TimestampMixin, Base):
     materials: Mapped[list["ManufacturingMaterial"]] = relationship(
         cascade="all, delete-orphan", order_by="ManufacturingMaterial.id"
     )
+    processes: Mapped[list["ManufacturingProcess"]] = relationship(
+        cascade="all, delete-orphan", order_by="ManufacturingProcess.sequence"
+    )
 
 
 class ManufacturingMaterial(Base):
@@ -113,6 +127,61 @@ class ManufacturingMaterial(Base):
     tea_leaf_id: Mapped[int] = mapped_column(ForeignKey("tea_leaves.id", ondelete="RESTRICT"))
     variety_id: Mapped[int] = mapped_column(ForeignKey("varieties.id", ondelete="RESTRICT"))
     planned_quantity: Mapped[Decimal] = mapped_column(QUANTITY_TYPE)
+    tea_leaf: Mapped[TeaLeaf] = relationship()
+    variety: Mapped[Variety] = relationship()
+
+
+class ManufacturingProcess(Base):
+    __tablename__ = "manufacturing_processes"
+    __table_args__ = (
+        CheckConstraint("sequence > 0", name="ck_process_sequence_positive"),
+        UniqueConstraint("manufacturing_order_id", "sequence", name="uq_order_process_sequence"),
+        UniqueConstraint("manufacturing_order_id", "process_code", name="uq_order_process_code"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    manufacturing_order_id: Mapped[int] = mapped_column(
+        ForeignKey("manufacturing_orders.id", ondelete="CASCADE")
+    )
+    sequence: Mapped[int]
+    process_code: Mapped[str] = mapped_column(String(30))
+    process_name: Mapped[str] = mapped_column(String(100))
+    status: Mapped[ProcessStatus] = mapped_column(
+        Enum(ProcessStatus, name="process_status"), default=ProcessStatus.PENDING
+    )
+    equipment_id: Mapped[int | None] = mapped_column(
+        ForeignKey("equipment.id", ondelete="RESTRICT")
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    result_note: Mapped[str | None] = mapped_column(String(500))
+    equipment: Mapped[Equipment | None] = relationship()
+
+
+class RawMaterialReceipt(TimestampMixin, Base):
+    __tablename__ = "raw_material_receipts"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    receipt_number: Mapped[str] = mapped_column(String(30), unique=True)
+    received_date: Mapped[date] = mapped_column(Date)
+    supplier_id: Mapped[int] = mapped_column(ForeignKey("suppliers.id", ondelete="RESTRICT"))
+    supplier: Mapped[Supplier] = relationship()
+    lines: Mapped[list["RawMaterialReceiptLine"]] = relationship(
+        cascade="all, delete-orphan", order_by="RawMaterialReceiptLine.id"
+    )
+
+
+class RawMaterialReceiptLine(Base):
+    __tablename__ = "raw_material_receipt_lines"
+    __table_args__ = (CheckConstraint("quantity > 0", name="ck_receipt_line_quantity_positive"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    receipt_id: Mapped[int] = mapped_column(
+        ForeignKey("raw_material_receipts.id", ondelete="CASCADE")
+    )
+    tea_leaf_id: Mapped[int] = mapped_column(ForeignKey("tea_leaves.id", ondelete="RESTRICT"))
+    variety_id: Mapped[int] = mapped_column(ForeignKey("varieties.id", ondelete="RESTRICT"))
+    quantity: Mapped[Decimal] = mapped_column(QUANTITY_TYPE)
     tea_leaf: Mapped[TeaLeaf] = relationship()
     variety: Mapped[Variety] = relationship()
 
