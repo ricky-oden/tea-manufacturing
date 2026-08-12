@@ -1,9 +1,9 @@
-from math import ceil
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.api.pagination import PAGE_SIZE_MAX, page_response
 from app.db.session import get_db
 from app.schemas.phase3 import (
     ProcessResponse,
@@ -29,16 +29,12 @@ DbSession = Annotated[Session, Depends(get_db)]
 @router.get("/raw-material-receipts", response_model=ReceiptListResponse)
 def receipts(
     session: DbSession,
-    page: Annotated[int, Query(ge=1)] = 1,
-    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=PAGE_SIZE_MAX),
 ) -> ReceiptListResponse:
     items, total = list_receipts(session, page, page_size)
-    return ReceiptListResponse(
-        items=[receipt_response(item) for item in items],
-        page=page,
-        page_size=page_size,
-        total=total,
-        total_pages=ceil(total / page_size),
+    return ReceiptListResponse.model_validate(
+        page_response([receipt_response(item) for item in items], page, page_size, total)
     )
 
 

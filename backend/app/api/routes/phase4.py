@@ -1,10 +1,10 @@
 from datetime import date
-from math import ceil
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.api.pagination import PAGE_SIZE_MAX, page_response
 from app.db.session import get_db
 from app.models.manufacturing import InventoryKind, InventoryTransactionType
 from app.schemas.phase4 import (
@@ -34,22 +34,14 @@ from app.services.phase4 import (
 
 router = APIRouter(tags=["phase4"])
 DbSession = Annotated[Session, Depends(get_db)]
-Page = Annotated[int, Query(ge=1)]
-PageSize = Annotated[int, Query(ge=1, le=100)]
-
-
-def page_response(items: list, page: int, page_size: int, total: int) -> dict:
-    return {
-        "items": items,
-        "page": page,
-        "page_size": page_size,
-        "total": total,
-        "total_pages": ceil(total / page_size),
-    }
 
 
 @router.get("/inventories/raw-materials", response_model=PageResponse)
-def raw_balances(session: DbSession, page: Page = 1, page_size: PageSize = 20) -> dict:
+def raw_balances(
+    session: DbSession,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=PAGE_SIZE_MAX),
+) -> dict:
     items, total = list_raw_balances(session, page, page_size)
     return page_response(
         [RawBalanceResponse.model_validate(item) for item in items], page, page_size, total
@@ -57,7 +49,11 @@ def raw_balances(session: DbSession, page: Page = 1, page_size: PageSize = 20) -
 
 
 @router.get("/inventories/products", response_model=PageResponse)
-def product_balances(session: DbSession, page: Page = 1, page_size: PageSize = 20) -> dict:
+def product_balances(
+    session: DbSession,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=PAGE_SIZE_MAX),
+) -> dict:
     items, total = list_product_balances(session, page, page_size)
     return page_response(
         [ProductBalanceResponse.model_validate(item) for item in items], page, page_size, total
@@ -67,8 +63,8 @@ def product_balances(session: DbSession, page: Page = 1, page_size: PageSize = 2
 @router.get("/inventory-transactions", response_model=PageResponse)
 def inventory_transactions(
     session: DbSession,
-    page: Page = 1,
-    page_size: PageSize = 20,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=PAGE_SIZE_MAX),
     inventory_kind: InventoryKind | None = None,
     transaction_type: InventoryTransactionType | None = None,
     tea_leaf_id: int | None = None,
@@ -98,7 +94,11 @@ def inventory_transactions(
 
 
 @router.get("/shipments", response_model=ShipmentListResponse)
-def shipments(session: DbSession, page: Page = 1, page_size: PageSize = 20) -> dict:
+def shipments(
+    session: DbSession,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=PAGE_SIZE_MAX),
+) -> dict:
     items, total = list_shipments(session, page, page_size)
     return page_response([shipment_response(item) for item in items], page, page_size, total)
 
