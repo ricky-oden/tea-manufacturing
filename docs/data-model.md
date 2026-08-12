@@ -69,13 +69,15 @@ PLAN_VERSION: `TEA-V1.0`
 
 - manufacturing_order_id
 - sequence
+- process_code: `STEAMING` / `ROLLING` / `DRYING`
 - process_name
-- status
+- status: `PENDING` / `IN_PROGRESS` / `COMPLETED`
+- equipment_id: 任意
 - started_at
 - completed_at
 - result_note
 
-工程名、工程数、追加実績項目は詳細設計で決定する。製造状態とは別に工程単位の進捗を保持する。
+製造指示内でsequenceとprocess_codeをそれぞれuniqueとする。製造状態とは別に工程単位の進捗を保持する。
 
 ## 在庫
 
@@ -179,3 +181,7 @@ CsvImportJob 1 --- * CsvImportError
 ## Phase 2 migration範囲
 
 茶葉、品種、設備、製品、製造指示、使用原料、原料在庫残高、製品在庫残高、在庫増減履歴を作成する。仕入先、入荷、工程、出荷、CSV取込のtableは担当フェーズまで作成しない。
+
+## Phase 3 migration範囲
+
+Phase 2 revisionへ連続する1 revisionで、仕入先、原料入荷ヘッダー・明細、固定製造工程を追加し、在庫取引種別へ`RECEIPT`を追加する。入荷数量の正数check、入荷番号unique、工程sequence/process codeの製造指示内unique、外部キーをDB制約として持つ。

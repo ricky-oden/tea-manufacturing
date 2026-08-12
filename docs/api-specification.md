@@ -101,6 +101,8 @@ response:
 
 状態操作を汎用`PUT`から分離し、serviceで遷移と在庫更新を一体として扱う。
 
+Phase 3の工程更新requestは`action: start | complete`、任意の`equipment_id`、`result_note`を持つ。製造中以外、前工程未完了、重複操作、無効設備を統一エラーで拒否する。
+
 ### Inventory
 
 | method | path | 用途 | 要件ID |
@@ -137,6 +139,8 @@ resourceは`tea-leaves`、`varieties`、`suppliers`、`equipment`、`products`�
 DELETE endpointは設けない。
 
 Phase 2では最初の縦切りに必要な`tea-leaves`、`varieties`、`equipment`、`products`のGET一覧とPOST登録を実装する。詳細・編集・有効無効の管理画面は各マスタの担当フェーズで補完する。
+
+Phase 3では`supplier`のGET一覧・POST登録を追加し、`equipment`のGET詳細・PUT編集／有効無効変更を追加する。原料入荷POSTは即時在庫反映し、複数明細を受け付ける。
 
 ### Product CSV imports
 

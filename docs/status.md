@@ -6,19 +6,19 @@ PLAN_VERSION: `TEA-V1.0`
 
 ## 現在フェーズ
 
-Phase 0: 計画固定（完了）／Phase 1: 開発基盤（完了）／Phase 2: 最初の縦切り（実装・検証完了、commit承認待ち）
+Phase 0: 計画固定（完了）／Phase 1: 開発基盤（完了）／Phase 2: 最初の縦切り（完了）／Phase 3: 入荷・工程・設備（実装・検証完了、commit承認待ち）
 
-TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1の開発基盤と、Phase 2の製造指示から在庫更新までの最初の縦切りを実装・検証した。後続フェーズの入荷、工程、出荷、集計、CSV等は未実装である。
+TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1の開発基盤、Phase 2の最初の縦切り、Phase 3の原料入荷・固定工程・設備管理を実装・検証した。後続フェーズの在庫参照、出荷、集計、CSV等は未実装である。
 
 ## 要件状況
 
 | 要件ID | 要件 | 計画済み | 実装済み | 検証済み |
 |---|---|---|---|---|
 | TEA-FR-001 | ダッシュボード | はい | いいえ | いいえ |
-| TEA-FR-002 | 原料入荷 | はい | いいえ | いいえ |
+| TEA-FR-002 | 原料入荷 | はい | はい | はい |
 | TEA-FR-003 | 製造指示 | はい | いいえ | いいえ |
-| TEA-FR-004 | 工程管理 | はい | いいえ | いいえ |
-| TEA-FR-005 | 設備管理 | はい | いいえ | いいえ |
+| TEA-FR-004 | 工程管理 | はい | はい | はい |
+| TEA-FR-005 | 設備管理 | はい | はい | はい |
 | TEA-FR-006 | 在庫管理 | はい | いいえ | いいえ |
 | TEA-FR-007 | 出荷 | はい | いいえ | いいえ |
 | TEA-FR-008 | 集計 | はい | いいえ | いいえ |
@@ -68,7 +68,7 @@ TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1の開発基�
 
 ## 次の承認ゲート
 
-Phase 2の検証結果をユーザーが確認し、commitを承認すること。
+Phase 3の検証結果をユーザーが確認し、commitを承認すること。
 
 ## Phase 2範囲の状態
 
@@ -85,3 +85,14 @@ Phase 2の検証結果をユーザーが確認し、commitを承認すること�
 - 接続DB: 開発`db:5432/tea_manufacturing`、test`test-db:5432/tea_manufacturing_test`。数量列`NUMERIC(15, 3)`を実DBで確認
 - `TEA-FR-003/005/006/009`はPhase 2該当部分を実装したが、編集、工程、管理画面等の後続受入条件が残るため要件全体は未実装・未検証のままとする。
 - `TEA-NFR-002/003/005`も後続API・出荷・業務testが残るため要件全体は未完了とする。
+
+## Phase 3範囲の状態
+
+- Model/migration: 仕入先、原料入荷・明細、固定製造工程、`RECEIPT`取引種別をPhase 2に連続するrevisionで追加
+- 入荷: 即時確定、複数明細、決定順lock、残高・履歴同一transaction、重複番号・無効マスタ・数量制御
+- 工程: issue時に蒸熱・揉捻・乾燥を1回だけ作成し、製造中だけsequence順に開始・完了。全工程完了gateと工程0件経過措置を実装
+- 設備: 一覧、登録、詳細、編集、有効無効。無効設備の新規利用を拒否し、過去参照を維持
+- frontend: 入荷一覧・複数明細登録、工程panel、設備管理。loading/error/empty/disabled/入力保持/cache再取得を実装
+- Phase 3検証: Jest 25件、pytest 38件、frontend/backend lint・format、Vite build、Compose config/build/up、開発/test DB migration・Alembic check、backend/Vite proxy APIが成功
+- 接続DB: 開発`db:5432/tea_manufacturing`（named volume保持）、test`test-db:5432/tea_manufacturing_test`（tmpfs、clean migration検証）
+- `TEA-FR-002/004/005`は受入条件を実装・検証済み。`TEA-FR-009`は茶葉・品種・仕入先・製品の編集等が後続のため要件全体は未完了とする。

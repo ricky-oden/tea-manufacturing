@@ -156,3 +156,15 @@ Phase 1の基盤test、Docker Compose、手動CI定義を実装した。Starlett
 - frontendのloading、error、empty、登録payload、送信中disabled、入力保持、状態別操作、操作失敗、読み取り専用表示
 
 `TEA-FR-010`の検証根拠は許可取消と禁止遷移のparameterized API test、および状態別frontend component testとする。`TEA-FR-012`受入条件6と`TEA-NFR-003`受入条件5の検証根拠は、PostgreSQL上の強制例外rollback testと同時開始testとする。これらを未実行または失敗した場合は該当要件を検証済みと記録しない。
+
+## Phase 3 test
+
+- 複数明細入荷、各残高加算、明細単位`RECEIPT`履歴、一覧・詳細
+- 入荷番号重複、無効マスタ、数量validationとDB正数check
+- flush後強制例外による入荷・明細・残高・履歴の全rollback
+- 独立session／connectionの同時入荷による残高行lockと最終合計
+- issue時の固定3工程作成と重複防止、工程状態・sequence・日時・実績
+- 製造中以外、順序違反、重複工程操作、無効設備、全工程完了前の製造完了拒否
+- 全工程完了後の製造完了と、工程0件のPhase 2既存注文に対する経過措置
+- 設備一覧・登録・編集・有効無効、無効設備の新規利用拒否、過去参照維持
+- frontendの入荷複数明細、validation、送信中、入力保持、工程状態操作、設備管理とcache再取得
