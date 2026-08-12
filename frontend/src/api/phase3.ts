@@ -1,5 +1,9 @@
 import { apiFetch } from "./client";
-import type { Master, ManufacturingStatus } from "./manufacturing";
+import {
+  fetchMasters,
+  type Master,
+  type ManufacturingStatus,
+} from "./manufacturing";
 
 export type ReceiptInput = {
   receipt_number: string;
@@ -84,7 +88,7 @@ export const updateProcess = (
       body: JSON.stringify({ action }),
     },
   );
-export const fetchEquipment = () => apiFetch<Master[]>("/masters/equipment");
+export const fetchEquipment = () => fetchMasters("equipment");
 export const createEquipment = (body: EquipmentInput) =>
   apiFetch<Master>("/masters/equipment", postJson(body));
 export const updateEquipment = (id: number, body: EquipmentInput) =>

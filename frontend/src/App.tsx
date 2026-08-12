@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Link,
@@ -16,6 +17,7 @@ import {
   fetchOrder,
   fetchOrders,
   transitionOrder,
+  updateOrder,
   type OrderInput,
 } from "./api/manufacturing";
 import {
@@ -35,6 +37,7 @@ import {
   ShipmentListPage,
 } from "./Phase4";
 import { CsvImportPage } from "./CsvImportPage";
+import { MasterManagementPage } from "./MasterManagement";
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -46,7 +49,11 @@ function Layout({ children }: { children: React.ReactNode }) {
           <Link to="/manufacturing-orders">製造指示</Link>{" "}
           <Link to="/manufacturing-orders/new">新規登録</Link>{" "}
           <Link to="/raw-material-receipts">原料入荷</Link>{" "}
-          <Link to="/equipment">設備</Link>{" "}
+          <Link to="/masters/tea-leaves">茶葉</Link>{" "}
+          <Link to="/masters/varieties">品種</Link>{" "}
+          <Link to="/masters/suppliers">仕入先</Link>{" "}
+          <Link to="/masters/equipment">設備</Link>{" "}
+          <Link to="/masters/products">製品</Link>{" "}
           <Link to="/inventory/raw-materials">原料在庫</Link>{" "}
           <Link to="/inventory/products">製品在庫</Link>{" "}
           <Link to="/inventory/transactions">在庫履歴</Link>{" "}
@@ -83,13 +90,76 @@ function HealthPage() {
 function OrderListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
+  const filters = {
+    status: searchParams.get("status") ?? "",
+    product_id: searchParams.get("product_id") ?? "",
+    planned_date_from: searchParams.get("planned_date_from") ?? "",
+    planned_date_to: searchParams.get("planned_date_to") ?? "",
+  };
   const query = useQuery({
-    queryKey: ["manufacturing-orders", page],
-    queryFn: () => fetchOrders(page, 20),
+    queryKey: ["manufacturing-orders", page, filters],
+    queryFn: () => fetchOrders(page, 20, filters),
   });
   return (
     <Layout>
       <h1>製造指示一覧</h1>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          const data = new FormData(event.currentTarget);
+          const next = new URLSearchParams({ page: "1", page_size: "20" });
+          for (const key of [
+            "status",
+            "product_id",
+            "planned_date_from",
+            "planned_date_to",
+          ]) {
+            const value = String(data.get(key) ?? "");
+            if (value) next.set(key, value);
+          }
+          setSearchParams(next);
+        }}
+      >
+        <label>
+          状態
+          <select name="status" defaultValue={filters.status}>
+            <option value="">すべて</option>
+            {Object.keys(actions)
+              .concat(["COMPLETED", "CANCELLED"])
+              .map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+          </select>
+        </label>
+        <label>
+          製品ID
+          <input
+            name="product_id"
+            type="number"
+            min="1"
+            defaultValue={filters.product_id}
+          />
+        </label>
+        <label>
+          予定日（開始）
+          <input
+            name="planned_date_from"
+            type="date"
+            defaultValue={filters.planned_date_from}
+          />
+        </label>
+        <label>
+          予定日（終了）
+          <input
+            name="planned_date_to"
+            type="date"
+            defaultValue={filters.planned_date_to}
+          />
+        </label>
+        <button>絞り込む</button>
+      </form>
       {query.isPending && <p role="status">製造指示を取得中</p>}
       {query.isError && <p role="alert">製造指示の取得に失敗しました</p>}
       {query.data?.items.length === 0 && <p>製造指示はありません</p>}
@@ -106,7 +176,11 @@ function OrderListPage() {
           <button
             disabled={page <= 1}
             onClick={() =>
-              setSearchParams({ page: String(page - 1), page_size: "20" })
+              setSearchParams((current) => {
+                current.set("page", String(page - 1));
+                current.set("page_size", "20");
+                return current;
+              })
             }
           >
             前へ
@@ -117,7 +191,11 @@ function OrderListPage() {
           <button
             disabled={page >= query.data.total_pages}
             onClick={() =>
-              setSearchParams({ page: String(page + 1), page_size: "20" })
+              setSearchParams((current) => {
+                current.set("page", String(page + 1));
+                current.set("page_size", "20");
+                return current;
+              })
             }
           >
             次へ
@@ -130,6 +208,13 @@ function OrderListPage() {
 
 function OrderFormPage() {
   const navigate = useNavigate();
+  const { orderId } = useParams();
+  const editingId = orderId ? Number(orderId) : null;
+  const existing = useQuery({
+    queryKey: ["manufacturing-order", orderId],
+    queryFn: () => fetchOrder(orderId ?? ""),
+    enabled: editingId !== null,
+  });
   const products = useQuery({
     queryKey: ["masters", "products"],
     queryFn: () => fetchMasters("products"),
@@ -150,21 +235,46 @@ function OrderFormPage() {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm<OrderInput>({
     defaultValues: {
       materials: [{ tea_leaf_id: 0, variety_id: 0, planned_quantity: "0.001" }],
     },
   });
+  useEffect(() => {
+    if (!existing.data) return;
+    reset({
+      order_number: existing.data.order_number,
+      product_id: existing.data.product_id,
+      planned_quantity: existing.data.planned_quantity.toFixed(3),
+      planned_date: existing.data.planned_date,
+      equipment_id: existing.data.equipment_id,
+      materials: existing.data.materials.map((item) => ({
+        tea_leaf_id: item.tea_leaf_id,
+        variety_id: item.variety_id,
+        planned_quantity: item.planned_quantity.toFixed(3),
+      })),
+    });
+  }, [existing.data, reset]);
   const mutation = useMutation({
-    mutationFn: createOrder,
+    mutationFn: (value: OrderInput) =>
+      editingId === null ? createOrder(value) : updateOrder(editingId, value),
     onSuccess: (order) => navigate(`/manufacturing-orders/${order.id}`),
   });
-  const loading = [products, equipment, teaLeaves, varieties].some(
-    (item) => item.isPending,
-  );
-  const failed = [products, equipment, teaLeaves, varieties].some(
-    (item) => item.isError,
-  );
+  const loading = [
+    products,
+    equipment,
+    teaLeaves,
+    varieties,
+    ...(editingId ? [existing] : []),
+  ].some((item) => item.isPending);
+  const failed = [
+    products,
+    equipment,
+    teaLeaves,
+    varieties,
+    ...(editingId ? [existing] : []),
+  ].some((item) => item.isError);
   if (loading)
     return (
       <Layout>
@@ -179,8 +289,12 @@ function OrderFormPage() {
     );
   return (
     <Layout>
-      <h1>製造指示登録</h1>
-      {mutation.isError && <p role="alert">登録に失敗しました</p>}
+      <h1>{editingId === null ? "製造指示登録" : "製造指示編集"}</h1>
+      {mutation.isError && (
+        <p role="alert">
+          {editingId === null ? "登録に失敗しました" : "保存に失敗しました"}
+        </p>
+      )}
       <form onSubmit={handleSubmit((value) => mutation.mutate(value))}>
         <label>
           製造指示番号
@@ -280,7 +394,13 @@ function OrderFormPage() {
           />
         </label>
         <button disabled={mutation.isPending}>
-          {mutation.isPending ? "登録中" : "下書き登録"}
+          {mutation.isPending
+            ? editingId === null
+              ? "登録中"
+              : "保存中"
+            : editingId === null
+              ? "下書き登録"
+              : "下書き保存"}
         </button>
       </form>
     </Layout>
@@ -324,7 +444,20 @@ function OrderDetailPage() {
           <p>{query.data.order_number}</p>
           <p>状態: {query.data.status}</p>
           <p>製品: {query.data.product_name}</p>
+          <p>設備: {query.data.equipment_name}</p>
           <p>予定数量: {query.data.planned_quantity.toFixed(3)} kg</p>
+          <h2>使用原料</h2>
+          {query.data.materials.map((material) => (
+            <p key={material.id}>
+              {material.tea_leaf_name} / {material.variety_name} /{" "}
+              {material.planned_quantity.toFixed(3)} kg
+            </p>
+          ))}
+          {query.data.status === "DRAFT" && (
+            <Link to={`/manufacturing-orders/${query.data.id}/edit`}>
+              下書き編集
+            </Link>
+          )}
           {(actions[query.data.status] ?? []).map((action) => (
             <button
               key={action.key}
@@ -343,6 +476,18 @@ function OrderDetailPage() {
             orderId={query.data.id}
             orderStatus={query.data.status}
           />
+          <section>
+            <h2>関連在庫履歴</h2>
+            {query.data.inventory_transactions.length === 0 && (
+              <p>関連在庫履歴はありません</p>
+            )}
+            {query.data.inventory_transactions.map((item) => (
+              <p key={item.id}>
+                {item.transaction_type} / {item.quantity_delta.toFixed(3)} kg /
+                残高 {item.balance_after.toFixed(3)} kg
+              </p>
+            ))}
+          </section>
         </section>
       )}
     </Layout>
@@ -355,6 +500,10 @@ export function App() {
       <Route path="/" element={<HealthPage />} />
       <Route path="/manufacturing-orders" element={<OrderListPage />} />
       <Route path="/manufacturing-orders/new" element={<OrderFormPage />} />
+      <Route
+        path="/manufacturing-orders/:orderId/edit"
+        element={<OrderFormPage />}
+      />
       <Route
         path="/manufacturing-orders/:orderId"
         element={<OrderDetailPage />}
@@ -391,6 +540,25 @@ export function App() {
           </Layout>
         }
       />
+      {(
+        [
+          "tea-leaves",
+          "varieties",
+          "suppliers",
+          "equipment",
+          "products",
+        ] as const
+      ).map((resource) => (
+        <Route
+          key={resource}
+          path={`/masters/${resource}`}
+          element={
+            <Layout>
+              <MasterManagementPage resource={resource} />
+            </Layout>
+          }
+        />
+      ))}
       <Route
         path="/inventory/raw-materials"
         element={

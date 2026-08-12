@@ -1,11 +1,11 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
-from app.core.errors import BusinessValidationError, ConflictError, NotFoundError
+from app.core.errors import BusinessValidationError, ConflictError, NotFoundError, ValidationError
 from app.models.manufacturing import (
     Equipment,
     InventoryKind,
@@ -36,7 +36,11 @@ def _active(session: Session, model: type, identifier: int, label: str):
 
 def create_master(session: Session, model: type, payload: dict):
     if model is Product:
+        if payload.get("variety_id") is None:
+            raise BusinessValidationError("製品には品種が必要です。")
         _active(session, Variety, payload["variety_id"], "品種")
+    else:
+        payload.pop("variety_id", None)
     instance = model(**payload)
     session.add(instance)
     try:
@@ -55,6 +59,13 @@ def update_master(session: Session, model: type, identifier: int, payload: dict)
     instance = session.get(model, identifier)
     if instance is None:
         raise NotFoundError("マスタが見つかりません。")
+    if model is Product:
+        if payload.get("variety_id") is None:
+            raise BusinessValidationError("製品には品種が必要です。")
+        if payload["variety_id"] != instance.variety_id:
+            _active(session, Variety, payload["variety_id"], "品種")
+    else:
+        payload.pop("variety_id", None)
     for field, value in payload.items():
         setattr(instance, field, value)
     try:
@@ -64,6 +75,21 @@ def update_master(session: Session, model: type, identifier: int, payload: dict)
         raise ConflictError("同じコードが既に登録されています。", "DUPLICATE_CODE") from exc
     session.refresh(instance)
     return instance
+
+
+def get_master(session: Session, model: type, identifier: int):
+    instance = session.get(model, identifier)
+    if instance is None:
+        raise NotFoundError("マスタが見つかりません。")
+    return instance
+
+
+def list_masters(session: Session, model: type, page: int, page_size: int):
+    total = session.scalar(select(func.count()).select_from(model)) or 0
+    items = session.scalars(
+        select(model).order_by(model.code).offset((page - 1) * page_size).limit(page_size)
+    ).all()
+    return list(items), total
 
 
 def validate_order_references(session: Session, payload: ManufacturingOrderCreate) -> None:
@@ -106,8 +132,9 @@ def get_order(session: Session, order_id: int, *, lock: bool = False) -> Manufac
         .options(
             selectinload(ManufacturingOrder.product),
             selectinload(ManufacturingOrder.equipment),
-            selectinload(ManufacturingOrder.materials),
-            selectinload(ManufacturingOrder.processes),
+            selectinload(ManufacturingOrder.materials).selectinload(ManufacturingMaterial.tea_leaf),
+            selectinload(ManufacturingOrder.materials).selectinload(ManufacturingMaterial.variety),
+            selectinload(ManufacturingOrder.processes).selectinload(ManufacturingProcess.equipment),
         )
     )
     if lock:
@@ -118,15 +145,61 @@ def get_order(session: Session, order_id: int, *, lock: bool = False) -> Manufac
     return order
 
 
-def order_response(order: ManufacturingOrder) -> ManufacturingOrderResponse:
+def order_response(session: Session, order: ManufacturingOrder) -> ManufacturingOrderResponse:
+    transactions = session.scalars(
+        select(InventoryTransaction)
+        .where(
+            InventoryTransaction.reference_type == "MANUFACTURING_ORDER",
+            InventoryTransaction.reference_id == order.id,
+        )
+        .order_by(InventoryTransaction.id)
+    ).all()
     return ManufacturingOrderResponse.model_validate(
         {
             **order.__dict__,
             "product_name": order.product.name,
             "equipment_name": order.equipment.name,
-            "materials": order.materials,
+            "materials": [
+                {
+                    **material.__dict__,
+                    "tea_leaf_name": material.tea_leaf.name,
+                    "variety_name": material.variety.name,
+                }
+                for material in order.materials
+            ],
+            "processes": [
+                {
+                    **process.__dict__,
+                    "equipment_name": process.equipment.name if process.equipment else None,
+                }
+                for process in order.processes
+            ],
+            "inventory_transactions": transactions,
         }
     )
+
+
+def update_order(
+    session: Session, order_id: int, payload: ManufacturingOrderCreate
+) -> ManufacturingOrder:
+    order = get_order(session, order_id, lock=True)
+    if order.status is not ManufacturingStatus.DRAFT:
+        raise ConflictError("下書きの製造指示だけ編集できます。", "INVALID_STATUS_TRANSITION")
+    validate_order_references(session, payload)
+    order.order_number = payload.order_number
+    order.product_id = payload.product_id
+    order.planned_quantity = payload.planned_quantity
+    order.planned_date = payload.planned_date
+    order.equipment_id = payload.equipment_id
+    order.materials.clear()
+    session.flush()
+    order.materials = [ManufacturingMaterial(**item.model_dump()) for item in payload.materials]
+    try:
+        session.commit()
+    except IntegrityError as exc:
+        session.rollback()
+        raise ConflictError("製造指示番号が重複しています。", "DUPLICATE_ORDER_NUMBER") from exc
+    return get_order(session, order.id)
 
 
 def change_simple_status(
@@ -249,19 +322,37 @@ def complete_order(session: Session, order_id: int) -> ManufacturingOrder:
 
 
 def list_orders(
-    session: Session, page: int, page_size: int, status: ManufacturingStatus | None
+    session: Session,
+    page: int,
+    page_size: int,
+    status: ManufacturingStatus | None,
+    product_id: int | None = None,
+    planned_date_from: date | None = None,
+    planned_date_to: date | None = None,
 ) -> tuple[list[ManufacturingOrder], int]:
-    condition = ManufacturingOrder.status == status if status else True
+    conditions = []
+    if status:
+        conditions.append(ManufacturingOrder.status == status)
+    if product_id:
+        conditions.append(ManufacturingOrder.product_id == product_id)
+    if planned_date_from:
+        conditions.append(ManufacturingOrder.planned_date >= planned_date_from)
+    if planned_date_to:
+        conditions.append(ManufacturingOrder.planned_date <= planned_date_to)
+    if planned_date_from and planned_date_to and planned_date_from > planned_date_to:
+        raise ValidationError("開始日は終了日以前にしてください。")
     total = (
-        session.scalar(select(func.count()).select_from(ManufacturingOrder).where(condition)) or 0
+        session.scalar(select(func.count()).select_from(ManufacturingOrder).where(*conditions)) or 0
     )
     items = session.scalars(
         select(ManufacturingOrder)
-        .where(condition)
+        .where(*conditions)
         .options(
             selectinload(ManufacturingOrder.product),
             selectinload(ManufacturingOrder.equipment),
-            selectinload(ManufacturingOrder.materials),
+            selectinload(ManufacturingOrder.materials).selectinload(ManufacturingMaterial.tea_leaf),
+            selectinload(ManufacturingOrder.materials).selectinload(ManufacturingMaterial.variety),
+            selectinload(ManufacturingOrder.processes).selectinload(ManufacturingProcess.equipment),
         )
         .order_by(ManufacturingOrder.id.desc())
         .offset((page - 1) * page_size)

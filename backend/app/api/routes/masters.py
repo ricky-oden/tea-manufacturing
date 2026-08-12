@@ -1,78 +1,56 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.errors import NotFoundError
+from app.api.pagination import PAGE_SIZE_MAX, page_response
 from app.db.session import get_db
 from app.models.manufacturing import Equipment, Product, Supplier, TeaLeaf, Variety
-from app.schemas.manufacturing import MasterCreate, MasterResponse, ProductCreate, ProductResponse
-from app.schemas.phase3 import MasterUpdate
-from app.services.manufacturing import create_master, update_master
+from app.schemas.manufacturing import (
+    MasterListResponse,
+    MasterResponse,
+    MasterWrite,
+    ProductResponse,
+)
+from app.services.manufacturing import create_master, get_master, list_masters, update_master
 
 router = APIRouter(prefix="/masters", tags=["masters"])
 DbSession = Annotated[Session, Depends(get_db)]
+MasterResource = Literal["tea-leaves", "varieties", "suppliers", "equipment", "products"]
+MASTER_MODELS = {
+    "tea-leaves": TeaLeaf,
+    "varieties": Variety,
+    "suppliers": Supplier,
+    "equipment": Equipment,
+    "products": Product,
+}
 
 
-@router.get("/tea-leaves", response_model=list[MasterResponse])
-def list_tea_leaves(session: DbSession) -> list[TeaLeaf]:
-    return list(session.scalars(select(TeaLeaf).order_by(TeaLeaf.code)))
+@router.get("/{resource}", response_model=MasterListResponse)
+def masters(
+    resource: MasterResource,
+    session: DbSession,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=PAGE_SIZE_MAX),
+):
+    items, total = list_masters(session, MASTER_MODELS[resource], page, page_size)
+    return page_response(items, page, page_size, total)
 
 
-@router.post("/tea-leaves", response_model=MasterResponse, status_code=status.HTTP_201_CREATED)
-def create_tea_leaf(payload: MasterCreate, session: DbSession) -> TeaLeaf:
-    return create_master(session, TeaLeaf, payload.model_dump())
+@router.post(
+    "/{resource}",
+    response_model=ProductResponse | MasterResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_master(resource: MasterResource, payload: MasterWrite, session: DbSession):
+    return create_master(session, MASTER_MODELS[resource], payload.model_dump())
 
 
-@router.get("/varieties", response_model=list[MasterResponse])
-def list_varieties(session: DbSession) -> list[Variety]:
-    return list(session.scalars(select(Variety).order_by(Variety.code)))
+@router.get("/{resource}/{master_id}", response_model=ProductResponse | MasterResponse)
+def master_detail(resource: MasterResource, master_id: int, session: DbSession):
+    return get_master(session, MASTER_MODELS[resource], master_id)
 
 
-@router.post("/varieties", response_model=MasterResponse, status_code=status.HTTP_201_CREATED)
-def create_variety(payload: MasterCreate, session: DbSession) -> Variety:
-    return create_master(session, Variety, payload.model_dump())
-
-
-@router.get("/equipment", response_model=list[MasterResponse])
-def list_equipment(session: DbSession) -> list[Equipment]:
-    return list(session.scalars(select(Equipment).order_by(Equipment.code)))
-
-
-@router.post("/equipment", response_model=MasterResponse, status_code=status.HTTP_201_CREATED)
-def create_equipment(payload: MasterCreate, session: DbSession) -> Equipment:
-    return create_master(session, Equipment, payload.model_dump())
-
-
-@router.get("/equipment/{equipment_id}", response_model=MasterResponse)
-def equipment_detail(equipment_id: int, session: DbSession) -> Equipment:
-    equipment = session.get(Equipment, equipment_id)
-    if equipment is None:
-        raise NotFoundError("設備が見つかりません。")
-    return equipment
-
-
-@router.put("/equipment/{equipment_id}", response_model=MasterResponse)
-def edit_equipment(equipment_id: int, payload: MasterUpdate, session: DbSession) -> Equipment:
-    return update_master(session, Equipment, equipment_id, payload.model_dump())
-
-
-@router.get("/suppliers", response_model=list[MasterResponse])
-def list_suppliers(session: DbSession) -> list[Supplier]:
-    return list(session.scalars(select(Supplier).order_by(Supplier.code)))
-
-
-@router.post("/suppliers", response_model=MasterResponse, status_code=status.HTTP_201_CREATED)
-def create_supplier(payload: MasterCreate, session: DbSession) -> Supplier:
-    return create_master(session, Supplier, payload.model_dump())
-
-
-@router.get("/products", response_model=list[ProductResponse])
-def list_products(session: DbSession) -> list[Product]:
-    return list(session.scalars(select(Product).order_by(Product.code)))
-
-
-@router.post("/products", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
-def create_product(payload: ProductCreate, session: DbSession) -> Product:
-    return create_master(session, Product, payload.model_dump())
+@router.put("/{resource}/{master_id}", response_model=ProductResponse | MasterResponse)
+def edit_master(resource: MasterResource, master_id: int, payload: MasterWrite, session: DbSession):
+    return update_master(session, MASTER_MODELS[resource], master_id, payload.model_dump())

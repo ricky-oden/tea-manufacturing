@@ -4,7 +4,12 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
-from app.models.manufacturing import ManufacturingStatus
+from app.models.manufacturing import (
+    InventoryKind,
+    InventoryTransactionType,
+    ManufacturingStatus,
+    ProcessStatus,
+)
 
 Quantity = Annotated[Decimal, Field(gt=0, max_digits=15, decimal_places=3)]
 
@@ -19,6 +24,10 @@ class ProductCreate(MasterCreate):
     variety_id: int = Field(gt=0)
 
 
+class MasterWrite(MasterCreate):
+    variety_id: int | None = Field(default=None, gt=0)
+
+
 class MasterResponse(MasterCreate):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -26,6 +35,14 @@ class MasterResponse(MasterCreate):
 
 class ProductResponse(MasterResponse):
     variety_id: int
+
+
+class MasterListResponse(BaseModel):
+    items: list[ProductResponse | MasterResponse]
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
 
 
 class MaterialInput(BaseModel):
@@ -46,8 +63,37 @@ class ManufacturingOrderCreate(BaseModel):
 class MaterialResponse(MaterialInput):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    tea_leaf_name: str
+    variety_name: str
 
     @field_serializer("planned_quantity", when_used="json")
+    def serialize_quantity(self, value: Decimal) -> float:
+        return float(value)
+
+
+class ProcessDetailResponse(BaseModel):
+    id: int
+    sequence: int
+    process_code: str
+    process_name: str
+    status: ProcessStatus
+    equipment_id: int | None
+    equipment_name: str | None
+    started_at: datetime | None
+    completed_at: datetime | None
+    result_note: str | None
+
+
+class OrderInventoryTransactionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    inventory_kind: InventoryKind
+    transaction_type: InventoryTransactionType
+    quantity_delta: Decimal
+    balance_after: Decimal
+    occurred_at: datetime
+
+    @field_serializer("quantity_delta", "balance_after", when_used="json")
     def serialize_quantity(self, value: Decimal) -> float:
         return float(value)
 
@@ -66,6 +112,8 @@ class ManufacturingOrderResponse(BaseModel):
     started_at: datetime | None
     completed_at: datetime | None
     materials: list[MaterialResponse]
+    processes: list[ProcessDetailResponse]
+    inventory_transactions: list[OrderInventoryTransactionResponse]
 
     @field_serializer("planned_quantity", when_used="json")
     def serialize_quantity(self, value: Decimal) -> float:
