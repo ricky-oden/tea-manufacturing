@@ -6,9 +6,9 @@ PLAN_VERSION: `TEA-V1.0`
 
 ## 現在フェーズ
 
-Phase 0からPhase 4: 完了／Phase 5: 製品マスタCSV取込（実装・検証完了、commit承認待ち）
+Phase 0からPhase 5: 完了／Phase 6: 品質と学習用整備（実装・検証完了、未commit）
 
-TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1からPhase 4は確定済みであり、Phase 5の製品マスタCSV取込を実装・検証した。Phase 6総合整備は未実装である。
+TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1からPhase 5は確定済みであり、Phase 6で正式19要件の実装・検証対応を補完した。Phase 6差分は未stage・未commitである。
 
 ## 要件状況
 
@@ -16,22 +16,22 @@ TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1からPhase 4
 |---|---|---|---|---|
 | TEA-FR-001 | ダッシュボード | はい | はい | はい |
 | TEA-FR-002 | 原料入荷 | はい | はい | はい |
-| TEA-FR-003 | 製造指示 | はい | いいえ | いいえ |
+| TEA-FR-003 | 製造指示 | はい | はい | はい |
 | TEA-FR-004 | 工程管理 | はい | はい | はい |
 | TEA-FR-005 | 設備管理 | はい | はい | はい |
 | TEA-FR-006 | 在庫管理 | はい | はい | はい |
 | TEA-FR-007 | 出荷 | はい | はい | はい |
 | TEA-FR-008 | 集計 | はい | はい | はい |
-| TEA-FR-009 | マスタ管理 | はい | いいえ | いいえ |
+| TEA-FR-009 | マスタ管理 | はい | はい | はい |
 | TEA-FR-010 | 製造状態と操作制御 | はい | はい | はい |
 | TEA-FR-011 | 製品マスタCSV取込 | はい | はい | はい |
 | TEA-FR-012 | 製造指示から在庫更新までの結合処理 | はい | はい | はい |
 | TEA-NFR-001 | API契約と統一エラー | はい | はい | はい |
-| TEA-NFR-002 | ページング | はい | いいえ | いいえ |
+| TEA-NFR-002 | ページング | はい | はい | はい |
 | TEA-NFR-003 | 在庫取引の整合性と重複拒否 | はい | はい | はい |
 | TEA-NFR-004 | 再現可能な開発環境 | はい | はい | はい |
-| TEA-NFR-005 | 自動テスト | はい | いいえ | いいえ |
-| TEA-NFR-006 | 手動起動限定CI | はい | はい | いいえ |
+| TEA-NFR-005 | 自動テスト | はい | はい | はい |
+| TEA-NFR-006 | 手動起動限定CI | はい | はい | はい（静的検証） |
 | TEA-NFR-007 | 要件・実装・検証の追跡 | はい | はい | はい |
 
 「計画済み」は承認済みの本計画文書に要件と受入条件が記載されたことを示す。実装済み・検証済みとは別に管理する。
@@ -68,7 +68,7 @@ TEA-V1.0は2026-08-10に初期正本として承認済み。Phase 1からPhase 4
 
 ## 次の承認ゲート
 
-Phase 5の検証結果をユーザーが確認し、commitを承認すること。
+Phase 6の実装・検証結果をユーザーが確認し、commitを承認すること。GitHub Actions workflow本体は未実行であり、実行には別途明示承認を要する。
 
 ## Phase 2範囲の状態
 
@@ -120,3 +120,18 @@ Phase 5の検証結果をユーザーが確認し、commitを承認すること�
 - Phase 5検証: Jest 49件、pytest 71件、frontend/backend lint・format、Vite build、開発/test DB migration・Alembic check、backend/Vite proxy upload・error CSVが成功
 - 接続DB: 開発`db:5432/tea_manufacturing`（named volume保持）、test`test-db:5432/tea_manufacturing_test`（tmpfs、clean migration検証）
 - `TEA-FR-011`は実装・検証済み。`TEA-FR-009`は製品CSV登録部分のみ実装済みで、全マスタ管理要件は未完了のままとする。
+
+## Phase 6範囲の状態
+
+- 製造指示: 下書き編集、状態・製品・予定日期間の絞り込み、原料名・設備・工程・関連在庫履歴を含む詳細を補完した。
+- マスタ: 茶葉、品種、仕入先、設備、製品を共通のページング一覧・登録・詳細表示・編集・有効無効へ統一し、DELETE endpointを設けない。無効マスタの新規利用拒否と過去参照維持を検証した。
+- 共通ページング: 製造指示、入荷、原料・製品在庫、在庫履歴、出荷、全5マスタで既定20、上限100と共通応答を使用する。
+- warning: Pydantic `UnsupportedFieldAttributeWarning`の原因だった任意型query alias metadataを除去し、pytest 78件を`-W error`で成功した。
+- frontend: Jest 55件、ESLint、Prettier check、Vite production buildが成功した。
+- backend: pytest 78件、Ruff lint・format checkが成功した。skip、xfail、pytest warningは0件。
+- migration: 開発DBとclean test DBで`20260812_01`から`20260812_04`までupgrade・checkが成功し、test DBで`04→03→04`のdowngrade・再upgrade・checkも成功した。
+- seed: 開発DBで2回実行し、固定codeの茶葉・品種・仕入先・設備・製品・製品残高が各1件であることを確認した。pytestでも冪等性を検証した。
+- Docker/API: Compose config・build・up・health、backend直接とVite proxy経由のhealth・マスタページングAPIが成功した。
+- CI: `workflow_dispatch`だけ、`contents: read`、concurrency、`cancel-in-progress: true`、全job timeoutを静的確認した。workflow本体は未実行。
+- 文書: `docs/code-reading-guide.md`へ実在パス・class・functionと要件→画面→API→Model→service→test対応表を追加した。
+- 正式19要件はすべて計画済み・実装済み・検証済みである。TEA-V1.0対象外と本番運用に必要な追加事項は実装していない。

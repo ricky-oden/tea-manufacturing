@@ -14,8 +14,8 @@ PLAN_VERSION: `TEA-V1.0`
 | `/manufacturing-orders/new` | 製造指示登録 | 下書き登録 | TEA-FR-003 |
 | `/manufacturing-orders/:orderId` | 製造指示詳細 | 内容、状態操作、工程、在庫履歴 | TEA-FR-003、TEA-FR-004、TEA-FR-010、TEA-FR-012 |
 | `/manufacturing-orders/:orderId/edit` | 製造指示編集 | 下書き編集 | TEA-FR-003、TEA-FR-010 |
-| `/processes` | 工程管理 | 製造中指示、工程進捗、実績入力 | TEA-FR-004 |
-| `/equipment` | 設備管理 | 設備一覧、登録、編集、有効・無効 | TEA-FR-005、TEA-FR-009 |
+| `/masters/equipment` | 設備管理 | 設備一覧、登録、詳細表示、編集、有効・無効 | TEA-FR-005、TEA-FR-009 |
+| `/equipment` | 設備管理（Phase 3互換URL） | 設備一覧、登録、編集、有効・無効 | TEA-FR-005 |
 | `/inventory/raw-materials` | 原料在庫 | 残高、ページング | TEA-FR-006 |
 | `/inventory/products` | 製品在庫 | 残高、ページング | TEA-FR-006 |
 | `/inventory/transactions` | 在庫増減履歴 | 対象・種別・期間検索 | TEA-FR-006 |
@@ -23,10 +23,10 @@ PLAN_VERSION: `TEA-V1.0`
 | `/shipments/new` | 出荷登録 | 複数明細の下書き登録 | TEA-FR-007 |
 | `/shipments/:shipmentId` | 出荷詳細 | 下書き編集・確定、確定後読み取り専用 | TEA-FR-007 |
 | `/reports` | 集計 | 期間指定、入荷・製造・出荷集計 | TEA-FR-008 |
-| `/masters/tea-leaves` | 茶葉マスタ | 一覧、登録、編集、有効・無効 | TEA-FR-009 |
-| `/masters/varieties` | 品種マスタ | 一覧、登録、編集、有効・無効 | TEA-FR-009 |
-| `/masters/suppliers` | 仕入先マスタ | 一覧、登録、編集、有効・無効 | TEA-FR-009 |
-| `/masters/products` | 製品マスタ | 一覧、登録、編集、有効・無効 | TEA-FR-009 |
+| `/masters/tea-leaves` | 茶葉マスタ | 一覧、登録、詳細表示、編集、有効・無効、ページング | TEA-FR-009 |
+| `/masters/varieties` | 品種マスタ | 一覧、登録、詳細表示、編集、有効・無効、ページング | TEA-FR-009 |
+| `/masters/suppliers` | 仕入先マスタ | 一覧、登録、詳細表示、編集、有効・無効、ページング | TEA-FR-009 |
+| `/masters/products` | 製品マスタ | 一覧、登録、詳細表示、編集、有効・無効、ページング | TEA-FR-009 |
 | `/imports/products` | 製品CSV取込 | file選択、同期取込、Job結果・複数エラー表示、エラーCSV取得 | TEA-FR-011 |
 | その他 | Not Found | 存在しない画面であることを表示 | TEA-NFR-001 |
 

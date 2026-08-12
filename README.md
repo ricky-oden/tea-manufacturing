@@ -4,7 +4,7 @@ PLAN_VERSION: `TEA-V1.0`
 
 製茶会社における原料入荷、製造指示、工程、設備、在庫、出荷、集計、マスタ、CSV取込を題材に、業務システムの処理を学ぶための単一事業所向けアプリケーションです。
 
-Phase 1からPhase 4は確定済みです。Phase 5の製品マスタCSV取込は実装・検証済みで、変更はcommit前です。数量単位は`kg`、DBは`NUMERIC(15, 3)`、backendは`Decimal`を使用します。
+Phase 1からPhase 5は確定済みです。Phase 6では承認済みの19要件を実コード・テストと照合し、製造指示、マスタ管理、共通ページング、学習用文書を補強しています。数量単位は`kg`、DBは`NUMERIC(15, 3)`、backendは`Decimal`を使用します。
 
 ## 採用技術
 
@@ -29,6 +29,7 @@ Base imageは`node:22.23.2-bookworm-slim`、`python:3.12.13-slim-trixie`、`post
 - [在庫トランザクション](docs/inventory-transaction.md)
 - [CSV取込](docs/csv-import-specification.md)
 - [テスト戦略](docs/test-strategy.md)
+- [コードリーディングガイドと要件対応表](docs/code-reading-guide.md)
 
 ## ポートと接続
 
@@ -77,6 +78,14 @@ Phase 2の初期revisionからPhase 5へ連続するrevisionを追加済みで�
 ```bash
 docker compose exec backend alembic upgrade head
 docker compose exec backend alembic check
+```
+
+## 学習用demoデータ
+
+開発DBへ、茶葉・品種・仕入先・設備・製品と製品在庫残高0件を冪等に投入します。同じコマンドを複数回実行しても、同じコードの行を重複作成しません。test DBや本番用途のseedではありません。
+
+```bash
+docker compose exec backend python -m app.db.seed
 ```
 
 ## frontend commands
@@ -148,21 +157,20 @@ Python runtime依存は`backend/requirements.txt`、development/test依存は`ba
 - PostgreSQL接続、Alembic、test DB guard
 - formatter、lint、test、build、Docker Compose、手動CI基盤
 
-未実装:
-
-- 製造指示の下書き編集と工程実績
-- 仕入先マスタと各マスタの編集・有効無効管理
-- Phase 6の総合整備
-
 実装済み業務画面:
 
 - `http://localhost:5174/manufacturing-orders`
 - `http://localhost:5174/manufacturing-orders/new`
 - `http://localhost:5174/manufacturing-orders/:orderId`
+- `http://localhost:5174/manufacturing-orders/:orderId/edit`
 - `http://localhost:5174/raw-material-receipts`
 - `http://localhost:5174/raw-material-receipts/new`
 - `http://localhost:5174/raw-material-receipts/:receiptId`
-- `http://localhost:5174/equipment`
+- `http://localhost:5174/masters/tea-leaves`
+- `http://localhost:5174/masters/varieties`
+- `http://localhost:5174/masters/suppliers`
+- `http://localhost:5174/masters/equipment`
+- `http://localhost:5174/masters/products`
 - `http://localhost:5174/inventory/raw-materials`
 - `http://localhost:5174/inventory/products`
 - `http://localhost:5174/inventory/transactions`
@@ -178,6 +186,12 @@ Phase 3の原料入荷は登録時に即時確定し、複数明細、原料残�
 Phase 4の出荷は`DRAFT`で登録・編集し、確定時に出荷行と製品残高をlockして、全明細の残高検証、減算、`SHIPMENT`履歴、`CONFIRMED`への変更を同一transactionで保存します。在庫残高APIは参照専用です。期間集計とダッシュボードは`Asia/Tokyo`の日付解釈で両端を含む期間を扱います。
 
 Phase 5の製品マスタCSV取込は、UTF-8／UTF-8 BOM、1 MiB以下、1,000データ行以下を同期処理します。全行正常時だけ製品と`0.000 kg`の製品在庫残高を同一transactionで登録します。エラー時は製品を登録せず、Job・行エラーを保存して5列のエラーCSVを取得できます。multipart解析のruntime依存として`python-multipart==0.0.32`を固定しています。
+
+Phase 6では製造指示の下書き編集、状態・製品・予定日期間の絞り込み、原料・設備・工程・関連在庫履歴を含む詳細を補完しました。5マスタは共通の一覧・登録・詳細表示・編集・有効無効を持ち、DELETE APIを設けません。ページング対象APIは`page`、`page_size`（既定20、上限100）と共通応答形式を使用します。
+
+## 学習用構成と本番運用の違い
+
+本リポジトリは単一事業所のローカル学習用です。本番運用には、認証・認可、監査ログ、秘密情報管理、TLS、バックアップ／復旧、監視、可用性設計、容量・性能試験、production frontend配信runtime、脆弱性管理、デプロイ／ロールバック手順が別途必要です。これらはTEA-V1.0の実装範囲には追加していません。
 
 ## Runtime version確認元
 

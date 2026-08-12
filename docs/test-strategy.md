@@ -140,7 +140,7 @@ Phase 1のtest成功を、未実装の製造、在庫、出荷、マスタ、CSV
 
 ## 現在の状態
 
-Phase 1の基盤test、Docker Compose、手動CI定義を実装した。Starlette TestClientはdevelopment/test依存のhttpx2を使用する。業務機能testは該当フェーズまで未実装・未検証である。
+Phase 1の基盤test、Docker Compose、手動CI定義を実装した。Starlette TestClientはdevelopment/test依存のhttpx2を使用する。業務機能testはPhase 2以降の各節と実在testを検証根拠とする。
 
 ## Phase 2 test
 
@@ -192,3 +192,10 @@ Phase 4の検証根拠は`backend/tests/test_phase4.py`と`frontend/src/Phase4.t
 - frontendの初期説明、未選択disabled、upload中、成功・失敗件数、複数エラー、download導線、API失敗、同名file再選択、既存Job結果保持
 
 Phase 5の検証根拠は`backend/tests/test_csv_imports.py`と`frontend/src/CsvImportPage.test.tsx`とする。PostgreSQL/Jest実行、migration、lint、format、build、API疎通のいずれかが未実行または失敗中の場合、`TEA-FR-011`を検証済みと記録しない。
+
+## Phase 6 test
+
+- `backend/tests/test_phase6.py`: 5マスタの共通ページング・登録・詳細・編集・有効無効・DELETE不存在・コード重複、全ページングAPIの境界値、製造指示の下書き編集・絞り込み・詳細、無効マスタ拒否と過去参照をPostgreSQLで検証する。
+- `frontend/src/Phase6.test.tsx`: マスタ画面のloading/empty/登録/編集/有効無効、製造指示の絞り込み・下書き編集・詳細構成を実コンポーネントで検証する。
+- 全pytestを`-W error`でも実行し、Pydantic `UnsupportedFieldAttributeWarning`が再発しないことを確認する。
+- GitHub Actionsは静的に`workflow_dispatch`だけ、`contents: read`、concurrency、job timeout、frontend test/build、backend test/migration checkを確認する。workflow本体は追加承認なしに実行しない。

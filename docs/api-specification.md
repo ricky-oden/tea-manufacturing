@@ -88,7 +88,7 @@ response:
 
 | method | path | 用途 | 要件ID |
 |---|---|---|---|
-| GET | `/manufacturing-orders` | 一覧 | TEA-FR-003 |
+| GET | `/manufacturing-orders` | 一覧。`status`、`product_id`、`planned_date_from`、`planned_date_to`で絞り込み | TEA-FR-003 |
 | POST | `/manufacturing-orders` | 下書き登録 | TEA-FR-003 |
 | GET | `/manufacturing-orders/{order_id}` | 詳細 | TEA-FR-003 |
 | PUT | `/manufacturing-orders/{order_id}` | 下書き編集 | TEA-FR-003、TEA-FR-010 |
@@ -142,9 +142,7 @@ resourceは`tea-leaves`、`varieties`、`suppliers`、`equipment`、`products`�
 
 DELETE endpointは設けない。
 
-Phase 2では最初の縦切りに必要な`tea-leaves`、`varieties`、`equipment`、`products`のGET一覧とPOST登録を実装する。詳細・編集・有効無効の管理画面は各マスタの担当フェーズで補完する。
-
-Phase 3では`supplier`のGET一覧・POST登録を追加し、`equipment`のGET詳細・PUT編集／有効無効変更を追加する。原料入荷POSTは即時在庫反映し、複数明細を受け付ける。
+Phase 6で5 resourceすべてを共通契約へ統一した。一覧は`page`、`page_size`と共通ページ応答を持ち、登録・詳細・編集・有効無効を提供する。コード重複、無効マスタの新規利用をbackendで拒否し、過去参照は外部キーで維持する。
 
 ### Product CSV imports
 

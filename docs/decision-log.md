@@ -142,6 +142,18 @@ PLAN_VERSION: `TEA-V1.0`
 - エラーCSVはDBのJob別エラーから標準`csv`で同期生成し、外部storageや生成ファイルを永続化しない。
 - FastAPIのmultipart解析に必要なruntime依存として`python-multipart==0.0.32`を完全固定する。
 
+## 2026-08-12: Phase 6品質・学習用整備
+
+状態: 承認済み
+
+- 新しい業務領域を追加せず、正式19要件を実コードとテストへ対応付ける。
+- 製造指示一覧の定義済み絞り込みは状態、製品、予定日の開始・終了とする。下書きだけを編集でき、詳細に原料、設備、工程、関連在庫履歴を含める。
+- 茶葉、品種、仕入先、設備、製品は共通の一覧・登録・詳細・編集・有効無効を持ち、DELETE endpointを設けない。
+- ページング対象APIは共通の既定20、上限100と、`items`、`page`、`page_size`、`total`、`total_pages`を使用する。
+- 固定codeの学習用demo masterと製品在庫残高を、開発DBへ冪等に投入するローカル手順を提供する。
+- Pydantic warningは一律非表示にせず、任意型へ付けたquery alias metadataをなくし、全pytestを`-W error`で検証する。
+- GitHub Actionsは静的整合性だけを確認し、workflow本体は追加承認なしに実行しない。
+
 ## PROPOSED_CHANGE履歴
 
 なし。
