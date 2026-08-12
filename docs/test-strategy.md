@@ -120,6 +120,24 @@ frontend testはbackendのtransaction整合性を保証するものではない�
 - formatter、lint、test、build、migration checkの具体的コマンドはscaffold後にREADMEへ記載する。
 - Docker Compose上のfrontend→backend→PostgreSQL疎通を手動総合確認する。
 
+## Phase 1 test
+
+Phase 1では次だけを実装・検証対象とする。
+
+- frontend App、health loading・success・error
+- 共通fetch clientの正常responseと統一APIエラー変換
+- backend health、validation、404、conflict、unexpected error
+- unexpected error responseへ内部例外文字列を露出しないこと
+- `TEST_DATABASE_URL`のDB名が`_test`で終わることを強制するguard
+- pytest開始時、FastAPI application import前に検証済み`TEST_DATABASE_URL`を`DATABASE_URL`へ適用するbootstrap
+- アプリ本体のengine、session、`get_db`がtmpfsのtest-dbを参照するDB接続smoke test
+- test用migrationで`DATABASE_URL`と`TEST_DATABASE_URL`が同じ`_test` DBを指すことの事前guard
+- 不正URL、危険なDB名、test-db停止時に開発DBへfallbackしない異常系
+- Alembic upgradeとautogenerate差分check
+- Docker Composeのdb/backend/frontend healthとVite proxy疎通
+
+Phase 1のtest成功を、未実装の製造、在庫、出荷、マスタ、CSV要件の検証済み根拠にはしない。
+
 ## 現在の状態
 
-テストコード、Docker Compose、CIは未実装であり、すべて未実施・未検証である。
+Phase 1の基盤test、Docker Compose、手動CI定義を実装した。Starlette TestClientはdevelopment/test依存のhttpx2を使用する。業務機能testは該当フェーズまで未実装・未検証である。

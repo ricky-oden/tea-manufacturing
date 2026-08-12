@@ -62,6 +62,12 @@ response:
 
 ## endpoint一覧
 
+### Platform
+
+| method | path | 用途 | 要件ID |
+|---|---|---|---|
+| GET | `/health` | backend health取得。`{"status":"ok"}`を返す | TEA-NFR-001、TEA-NFR-004 |
+
 ### Dashboard / reports
 
 | method | path | 用途 | 要件ID |

@@ -24,8 +24,18 @@ FastAPI
   ├─ service/use-case: 業務ルールとtransaction境界
   └─ SQLAlchemy: 永続化
   ↓
-PostgreSQL 16
+PostgreSQL 16.14
 ```
+
+## Phase 1 開発基盤
+
+- frontendはNode.js 22.23.2、backendはPython 3.12.13、DBはPostgreSQL 16.14に固定する。
+- ブラウザは`localhost:5174`、backendは`localhost:8001`で公開する。PostgreSQL portは公開しない。
+- Viteが`/api/v1`をDocker network内の`backend:8000`へproxyする。
+- backendは同期SQLAlchemy Sessionとpsycopg 3で`db:5432`へ接続する。
+- test profileの`test-db`は`tea_manufacturing_test`をtmpfsで保持し、開発DB volumeと分離する。
+- pytestはapplication import前に検証済み`TEST_DATABASE_URL`を`DATABASE_URL`へ適用し、SQLAlchemy engineとsession factoryを遅延生成する。
+- Phase 1で実装するAPIは`GET /api/v1/health`だけとし、業務API・Modelは作成しない。
 
 ## 主要業務フロー
 

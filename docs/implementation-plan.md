@@ -4,7 +4,7 @@ PLAN_VERSION: `TEA-V1.0`
 
 上位計画: `CAREER-SYSTEMS-V1`
 
-状態: 2026-08-10承認済みの初期正本。アプリケーションは未実装。
+状態: 2026-08-10承認済みの初期正本。Phase 1開発基盤は実装済み、業務機能は未実装。
 
 ## 1. 目的
 
@@ -24,16 +24,16 @@ PLAN_VERSION: `TEA-V1.0`
 
 | 区分 | 採用技術 |
 |---|---|
-| frontend runtime | Node.js 22系 |
+| frontend runtime | Node.js 22.23.2 |
 | frontend | React、TypeScript、Vite、React Router |
 | server state | `@tanstack/react-query` |
 | forms | React Hook Form |
 | HTTP | 共通fetch client |
 | frontend test | Jest、React Testing Library |
-| backend runtime | Python 3.12系 |
+| backend runtime | Python 3.12.13 |
 | backend | FastAPI、SQLAlchemy、Alembic |
 | backend test | pytest |
-| database | PostgreSQL 16系 |
+| database | PostgreSQL 16.14 |
 | local environment | Docker Compose |
 | package manager | npm |
 | Python dependencies | runtime用とdevelopment/test用を分離 |
@@ -92,7 +92,7 @@ PLAN_VERSION: `TEA-V1.0`
 
 - Compose project名は`tea-manufacturing`とする。
 - `frontend`、`backend`、`db`の3サービスを基本とする。
-- frontendはホスト`5174`、backendはホスト`8001`を使用する。
+- frontendはホスト`5174`からcontainer`5173`、backendはホスト`8001`からcontainer`8000`へ接続する。
 - backendはCompose network内の`db:5432`へ接続する。
 - 実`.env`は管理せず、開発用例だけを`.env.example`へ置く。
 
@@ -191,7 +191,6 @@ CSV取込は、基盤とこの縦切り導線の完成後に独立した機能�
 
 ## 11. 未確定事項
 
-- Node.js 22系、Python 3.12系、PostgreSQL 16系で固定する具体的patch version
 - 製造工程の具体的な工程名と工程数
 - ダッシュボードおよび集計の既定期間と表示指標の詳細
 - 原料数量・製品数量の固定基準単位と小数桁数
