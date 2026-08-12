@@ -34,6 +34,7 @@ import {
   ShipmentFormPage,
   ShipmentListPage,
 } from "./Phase4";
+import { CsvImportPage } from "./CsvImportPage";
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -49,7 +50,8 @@ function Layout({ children }: { children: React.ReactNode }) {
           <Link to="/inventory/raw-materials">原料在庫</Link>{" "}
           <Link to="/inventory/products">製品在庫</Link>{" "}
           <Link to="/inventory/transactions">在庫履歴</Link>{" "}
-          <Link to="/shipments">出荷</Link> <Link to="/reports">集計</Link>
+          <Link to="/shipments">出荷</Link> <Link to="/reports">集計</Link>{" "}
+          <Link to="/imports/products">製品CSV取込</Link>
         </nav>
       </header>
       <main className="app-shell">{children}</main>
@@ -442,6 +444,14 @@ export function App() {
         element={
           <Layout>
             <ReportsPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/imports/products"
+        element={
+          <Layout>
+            <CsvImportPage />
           </Layout>
         }
       />

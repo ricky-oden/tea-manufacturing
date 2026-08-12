@@ -16,14 +16,17 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
   );
 }
 
+function currentApiBaseUrl(): string {
+  return typeof __API_BASE_URL__ === "string"
+    ? __API_BASE_URL__
+    : defaultApiBaseUrl;
+}
+
 export async function apiFetch<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
-  const baseUrl =
-    typeof __API_BASE_URL__ === "string" ? __API_BASE_URL__ : defaultApiBaseUrl;
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const response = await fetch(`${baseUrl}${normalizedPath}`, {
+  const response = await fetch(apiUrl(path), {
     ...init,
     headers: {
       Accept: "application/json",
@@ -51,4 +54,9 @@ export async function apiFetch<T>(
     message: "APIから予期しない応答を受信しました。",
     field_errors: [],
   });
+}
+
+export function apiUrl(path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${currentApiBaseUrl()}${normalizedPath}`;
 }
