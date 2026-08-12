@@ -50,6 +50,15 @@ class ValidationError(AppError):
         super().__init__(status_code=422, code="VALIDATION_ERROR", message=message)
 
 
+class PayloadTooLargeError(AppError):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=413,
+            code="FILE_TOO_LARGE",
+            message="ファイルサイズは1 MiB以下にしてください。",
+        )
+
+
 def error_response(
     *,
     status_code: int,
